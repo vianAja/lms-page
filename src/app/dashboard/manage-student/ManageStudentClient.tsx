@@ -2,23 +2,23 @@
 
 import { useMemo, useState } from 'react';
 
-export type StudentAccessCard = {
+export type StudentClassAccessCard = {
   username: string;
   fullname: string | null;
-  labs: Array<{
-    lab_id: number;
-    lab_key: string;
-    lab_title: string;
-    has_access: boolean;
+  classes: Array<{
+    class_id: number;
+    class_name: string;
+    class_description: string | null;
+    is_enrolled: boolean;
   }>;
 };
 
 type ManageStudentClientProps = {
-  students: StudentAccessCard[];
-  toggleAccessAction: (formData: FormData) => void | Promise<void>;
+  students: StudentClassAccessCard[];
+  toggleClassAccessAction: (formData: FormData) => void | Promise<void>;
 };
 
-export default function ManageStudentClient({ students, toggleAccessAction }: ManageStudentClientProps) {
+export default function ManageStudentClient({ students, toggleClassAccessAction }: ManageStudentClientProps) {
   const [search, setSearch] = useState('');
 
   const filteredStudents = useMemo(() => {
@@ -37,7 +37,7 @@ export default function ManageStudentClient({ students, toggleAccessAction }: Ma
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-[#333]">Manage Student</h1>
-          <p className="text-[#828282] text-sm mt-1">Control laboratory access permissions for individual students.</p>
+          <p className="text-[#828282] text-sm mt-1">Assign class access to students. All labs in an assigned class become accessible automatically.</p>
         </div>
       </div>
 
@@ -53,7 +53,7 @@ export default function ManageStudentClient({ students, toggleAccessAction }: Ma
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredStudents.map((student) => {
-          const authorizedCount = student.labs.filter((lab) => lab.has_access).length;
+          const enrolledCount = student.classes.filter((classItem) => classItem.is_enrolled).length;
           return (
             <div key={student.username} className="bg-white border border-[#E0E6ED] rounded-xl shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col">
               <div className="p-6 flex-1">
@@ -68,27 +68,27 @@ export default function ManageStudentClient({ students, toggleAccessAction }: Ma
                 </div>
 
                 <div className="space-y-3">
-                  {student.labs.map((lab) => (
-                    <div key={`${student.username}-${lab.lab_key}`} className="flex items-center justify-between p-3 bg-[#F9FBFC] rounded-lg border border-[#E0E6ED] gap-3">
+                  {student.classes.map((classItem) => (
+                    <div key={`${student.username}-${classItem.class_id}`} className="flex items-center justify-between p-3 bg-[#F9FBFC] rounded-lg border border-[#E0E6ED] gap-3">
                       <div className="min-w-0">
                         <p className="text-xs font-bold text-[#333] uppercase tracking-wider truncate">
-                          {lab.lab_key} Access
+                          {classItem.class_name}
                         </p>
-                        <p className="text-xs text-[#828282] truncate">{lab.lab_title}</p>
+                        <p className="text-xs text-[#828282] truncate">{classItem.class_description || 'No class description'}</p>
                       </div>
-                      <form action={toggleAccessAction}>
+                      <form action={toggleClassAccessAction}>
                         <input type="hidden" name="username" value={student.username} />
-                        <input type="hidden" name="labId" value={lab.lab_key} />
-                        <input type="hidden" name="currentAccess" value={lab.has_access ? 'true' : 'false'} />
+                        <input type="hidden" name="classId" value={classItem.class_id} />
+                        <input type="hidden" name="currentEnrolled" value={classItem.is_enrolled ? 'true' : 'false'} />
                         <button
                           type="submit"
                           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
-                            lab.has_access ? 'bg-[#27AE60]' : 'bg-[#E0E6ED]'
+                            classItem.is_enrolled ? 'bg-[#27AE60]' : 'bg-[#E0E6ED]'
                           }`}
                         >
                           <span
                             className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                              lab.has_access ? 'translate-x-6' : 'translate-x-1'
+                              classItem.is_enrolled ? 'translate-x-6' : 'translate-x-1'
                             }`}
                           />
                         </button>
@@ -99,9 +99,9 @@ export default function ManageStudentClient({ students, toggleAccessAction }: Ma
               </div>
 
               <div className="px-6 py-4 bg-[#F9FBFC] border-t border-[#E0E6ED] flex items-center justify-between">
-                <span className="text-[10px] font-bold text-[#BDBDBD] uppercase tracking-widest text-[#828282]">Authorized Labs</span>
+                <span className="text-[10px] font-bold text-[#BDBDBD] uppercase tracking-widest text-[#828282]">Assigned Classes</span>
                 <span className="text-[10px] font-bold uppercase text-[#27AE60]">
-                  {authorizedCount}/{student.labs.length}
+                  {enrolledCount}/{student.classes.length}
                 </span>
               </div>
             </div>

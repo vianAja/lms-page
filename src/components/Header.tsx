@@ -41,22 +41,22 @@ export default async function Header({ title }: HeaderProps) {
 
       <div className="flex items-center gap-3">
         {isAdmin && (
-          <Link href="/dashboard" className="px-4 py-1.5 rounded-lg border border-purple-700/50 bg-purple-900/20 text-purple-300 text-sm hover:bg-purple-800/40 hover:text-purple-100 transition-all font-medium active:scale-95">
+          <Link href="/dashboard" className="px-4 py-1.5 rounded-lg border border-[#D9E6F2] bg-white text-[#2D9CDB] text-sm hover:bg-[#F2F8FD] transition-all font-semibold active:scale-95">
             Admin Dashboard
           </Link>
         )}
-        <button className="px-4 py-1.5 rounded-lg border border-zinc-700 text-zinc-300 text-sm hover:bg-zinc-800 hover:text-zinc-100 transition-all active:scale-95">
+        <button className="px-4 py-1.5 rounded-lg border border-[#E0E6ED] text-[#828282] text-sm hover:bg-[#F9FBFC] hover:text-[#333] transition-all active:scale-95">
           Grade
         </button>
-        <button className="px-4 py-1.5 rounded-lg border border-zinc-700 text-zinc-300 text-sm hover:bg-zinc-800 hover:text-zinc-100 transition-all active:scale-95">
+        <button className="px-4 py-1.5 rounded-lg border border-[#E0E6ED] text-[#828282] text-sm hover:bg-[#F9FBFC] hover:text-[#333] transition-all active:scale-95">
           Start
         </button>
-        <button className="px-4 py-1.5 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 transition-all shadow-lg shadow-blue-900/20 active:scale-95">
+        <button className="px-4 py-1.5 rounded-lg bg-[#2D9CDB] text-white text-sm font-semibold hover:bg-[#2789C2] transition-all shadow-sm active:scale-95">
           Next
         </button>
         {sessionDetails && (
           <>
-            <div className="w-px h-6 bg-zinc-700 mx-1"></div>
+            <div className="w-px h-6 bg-[#E0E6ED] mx-1"></div>
             <ProfileDropdown
               fullname={sessionDetails.fullname || ''}
               username={sessionDetails.username || ''}

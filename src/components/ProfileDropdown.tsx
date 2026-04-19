@@ -60,9 +60,14 @@ export default function ProfileDropdown({ fullname, username, csrfToken }: Profi
 
       if (response.ok) {
         window.location.href = '/login';
+        return;
       }
+
+      // Fallback to hard navigation so user is not stuck.
+      window.location.href = '/login';
     } catch (err) {
       console.error(err);
+      window.location.href = '/login';
     }
   };
 

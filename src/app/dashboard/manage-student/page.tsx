@@ -1,64 +1,120 @@
 import { db } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
-import { validateCsrfToken } from '@/lib/csrf';
-import ManageStudentClient, { StudentAccessCard } from './ManageStudentClient';
+import { redirect } from 'next/navigation';
+import ManageStudentClient, { StudentClassAccessCard } from './ManageStudentClient';
 
-async function toggleAccess(formData: FormData) {
+async function toggleClassAccess(formData: FormData) {
   'use server';
   const username = formData.get('username') as string;
-  const labId = formData.get('labId') as string;
-  const currentAccess = formData.get('currentAccess') === 'true';
-
-  await db.query(`
-    INSERT INTO lab_access (username, lab_id, has_access) VALUES ($1, $2, $3)
-    ON CONFLICT (username, lab_id) DO UPDATE SET has_access = EXCLUDED.has_access
-  `, [username, labId, !currentAccess]);
+  const classId = Number(formData.get('classId'));
+  const currentEnrolled = formData.get('currentEnrolled') === 'true';
 
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get('user_session');
   if (!sessionCookie?.value) {
-    throw new Error('Unauthorized');
+    redirect('/login');
   }
 
-  let sessionUsername = '';
-  let sessionCsrfToken = '';
-
+  let sessionRole = '';
   try {
-    const session = JSON.parse(sessionCookie.value) as { username?: string; csrf_token?: string };
-    sessionUsername = session.username || '';
-    sessionCsrfToken = session.csrf_token || '';
+    const session = JSON.parse(sessionCookie.value) as { role?: string };
+    sessionRole = session.role || '';
   } catch {
-    throw new Error('Unauthorized');
+    redirect('/login');
   }
 
-  const isValidCsrf = await validateCsrfToken(sessionUsername, sessionCsrfToken);
-  if (!isValidCsrf) {
-    throw new Error('Unauthorized');
+  if (sessionRole !== 'admin') {
+    redirect('/login');
+  }
+
+  if (!username || !Number.isInteger(classId)) {
+    return;
+  }
+
+  await db.query('BEGIN');
+  try {
+    if (currentEnrolled) {
+      await db.query(
+        'DELETE FROM class_enrollments WHERE username = $1 AND class_id = $2',
+        [username, classId]
+      );
+
+      await db.query(
+        `
+          DELETE FROM lab_access
+          WHERE username = $1
+            AND lab_id IN (SELECT lab_key FROM labs WHERE class_id = $2)
+        `,
+        [username, classId]
+      );
+    } else {
+      await db.query(
+        `
+          INSERT INTO class_enrollments (username, class_id)
+          VALUES ($1, $2)
+          ON CONFLICT (username, class_id) DO NOTHING
+        `,
+        [username, classId]
+      );
+
+      await db.query(
+        `
+          INSERT INTO lab_access (username, lab_id, has_access, updated_at)
+          SELECT $1, l.lab_key, true, NOW()
+          FROM labs l
+          WHERE l.class_id = $2
+          ON CONFLICT (username, lab_id) DO UPDATE
+          SET has_access = true, updated_at = NOW()
+        `,
+        [username, classId]
+      );
+    }
+
+    await db.query('COMMIT');
+  } catch (error) {
+    await db.query('ROLLBACK');
+    throw error;
   }
 
   revalidatePath('/dashboard/manage-student');
+  revalidatePath('/');
 }
 
 export default async function ManageStudentPage() {
-  let students: StudentAccessCard[] = [];
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get('user_session');
+  if (!sessionCookie?.value) {
+    redirect('/login');
+  }
+
+  try {
+    const session = JSON.parse(sessionCookie.value) as { role?: string };
+    if (session.role !== 'admin') {
+      redirect('/');
+    }
+  } catch {
+    redirect('/login');
+  }
+
+  let students: StudentClassAccessCard[] = [];
   try {
     const result = await db.query(`
       SELECT 
         u.username, 
         u.fullname,
-        l.lab_key,
-        l.title as lab_title,
-        l.id as lab_id,
-        COALESCE(la.has_access, false) as has_access
+        c.id as class_id,
+        c.name as class_name,
+        c.description as class_description,
+        COALESCE((ce.class_id IS NOT NULL), false) as is_enrolled
       FROM users u
-      CROSS JOIN labs l
-      LEFT JOIN lab_access la ON la.username = u.username AND la.lab_id = l.lab_key
+      CROSS JOIN classes c
+      LEFT JOIN class_enrollments ce ON ce.username = u.username AND ce.class_id = c.id
       WHERE u.role = 'student' AND u.is_active = true
-      ORDER BY u.username ASC, l.order_num ASC
+      ORDER BY u.username ASC, c.created_at ASC
     `);
 
-    const grouped = new Map<string, StudentAccessCard>();
+    const grouped = new Map<string, StudentClassAccessCard>();
 
     for (const row of result.rows) {
       const existing = grouped.get(row.username);
@@ -67,23 +123,23 @@ export default async function ManageStudentPage() {
         grouped.set(row.username, {
           username: row.username,
           fullname: row.fullname,
-          labs: [
+          classes: [
             {
-              lab_id: row.lab_id,
-              lab_key: row.lab_key,
-              lab_title: row.lab_title,
-              has_access: row.has_access,
+              class_id: row.class_id,
+              class_name: row.class_name,
+              class_description: row.class_description,
+              is_enrolled: row.is_enrolled,
             },
           ],
         });
         continue;
       }
 
-      existing.labs.push({
-        lab_id: row.lab_id,
-        lab_key: row.lab_key,
-        lab_title: row.lab_title,
-        has_access: row.has_access,
+      existing.classes.push({
+        class_id: row.class_id,
+        class_name: row.class_name,
+        class_description: row.class_description,
+        is_enrolled: row.is_enrolled,
       });
     }
 
@@ -92,5 +148,5 @@ export default async function ManageStudentPage() {
     console.error('Error fetching students:', error);
   }
 
-  return <ManageStudentClient students={students} toggleAccessAction={toggleAccess} />;
+  return <ManageStudentClient students={students} toggleClassAccessAction={toggleClassAccess} />;
 }

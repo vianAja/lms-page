@@ -20,7 +20,6 @@ type ClassLabRow = {
   lab_key: string | null;
   lab_title: string | null;
   order_num: number | null;
-  has_access: boolean;
 };
 
 type ClassItem = {
@@ -55,7 +54,7 @@ function mapClasses(rows: ClassLabRow[]): ClassItem[] {
         lab_key: row.lab_key,
         title: row.lab_title,
         order_num: row.order_num,
-        has_access: row.has_access,
+        has_access: true,
       });
     }
   }
@@ -96,14 +95,10 @@ export default async function HomePage() {
         l.id AS lab_id,
         l.lab_key,
         l.title AS lab_title,
-        l.order_num,
-        COALESCE(la.has_access, false) AS has_access
+        l.order_num
       FROM class_enrollments ce
       JOIN classes c ON c.id = ce.class_id
       LEFT JOIN labs l ON l.class_id = c.id
-      LEFT JOIN lab_access la
-        ON la.username = $1
-       AND la.lab_id = l.lab_key
       WHERE ce.username = $1
       ORDER BY c.id ASC, l.order_num ASC, l.id ASC
     `,

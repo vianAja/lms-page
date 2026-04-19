@@ -20,33 +20,40 @@ export default async function LabPage({ params }: { params: Promise<{ id: string
     try {
       const session = JSON.parse(sessionCookie.value);
       username = session.username;
-
-      const accessResult = await db.query(
-        'SELECT has_access FROM lab_access WHERE username = $1 AND lab_id = $2',
-        [username, labId]
-      );
-      const accessRow = accessResult.rows[0];
-
-      if (!accessRow || accessRow.has_access === false) {
-        return (
-          <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4 text-white">
-            <div className="w-full max-w-xl rounded-2xl border border-zinc-800 bg-zinc-900/90 p-8 shadow-2xl text-center">
-              <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-red-500/10 border border-red-500/30">
-                <LockIcon className="h-7 w-7 text-red-500" />
-              </div>
-              <h1 className="text-3xl font-bold text-red-500">Access Restricted</h1>
-              <p className="mt-3 text-zinc-400">
-                You do not have permission to access this lab. Please contact your instructor.
-              </p>
-              <Link
-                href="/"
-                className="mt-7 inline-flex items-center rounded-lg bg-zinc-800 px-5 py-2.5 font-medium text-zinc-100 hover:bg-zinc-700 transition-colors"
-              >
-                ← Back to Portal
-              </Link>
-            </div>
-          </div>
+      if (session.role !== 'admin') {
+        const accessResult = await db.query(
+          `
+            SELECT 1
+            FROM class_enrollments ce
+            JOIN labs l ON l.class_id = ce.class_id
+            WHERE ce.username = $1 AND l.lab_key = $2
+            LIMIT 1
+          `,
+          [username, labId]
         );
+        const hasAccessByClass = accessResult.rowCount > 0;
+
+        if (!hasAccessByClass) {
+          return (
+            <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4 text-white">
+              <div className="w-full max-w-xl rounded-2xl border border-zinc-800 bg-zinc-900/90 p-8 shadow-2xl text-center">
+                <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-red-500/10 border border-red-500/30">
+                  <LockIcon className="h-7 w-7 text-red-500" />
+                </div>
+                <h1 className="text-3xl font-bold text-red-500">Access Restricted</h1>
+                <p className="mt-3 text-zinc-400">
+                  You do not have permission to access this lab. Please contact your instructor.
+                </p>
+                <Link
+                  href="/"
+                  className="mt-7 inline-flex items-center rounded-lg bg-zinc-800 px-5 py-2.5 font-medium text-zinc-100 hover:bg-zinc-700 transition-colors"
+                >
+                  ← Back to Portal
+                </Link>
+              </div>
+            </div>
+          );
+        }
       }
     } catch (e) {
       console.error('Failed to parse session cookie or check DB');

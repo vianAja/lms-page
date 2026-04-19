@@ -1,6 +1,5 @@
 import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
-import { withCsrf } from '@/lib/withCsrf';
 
 export function GET() {
   return new Response(JSON.stringify({ message: 'Method not allowed' }), {
@@ -9,7 +8,7 @@ export function GET() {
   });
 }
 
-export const POST = withCsrf(async () => {
+export async function POST() {
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get('user_session');
 
@@ -37,4 +36,4 @@ export const POST = withCsrf(async () => {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
   });
-});
+}
