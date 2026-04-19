@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:latest
+    container_name: lms-db
+    environment:
+      POSTGRES_USER: ${DB_USER:-lms_admin}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-Lms#123}
+      POSTGRES_DB: ${DB_NAME:-lms}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+
+volumes:
+  postgres_data:

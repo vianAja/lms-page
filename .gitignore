@@ -1,0 +1,41 @@
+# dependencies
+node_modules/
+
+# next.js build output
+.next/
+out/
+
+# generic build output
+dist/
+build/
+
+# logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# env files
+.env
+.env.*
+!.env.example
+
+# local database / state
+*.sqlite
+*.sqlite3
+
+# tooling/cache
+.turbo/
+coverage/
+*.tsbuildinfo
+
+# os/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# local agent files
+.codex
