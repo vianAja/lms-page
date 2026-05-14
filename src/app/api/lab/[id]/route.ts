@@ -13,7 +13,8 @@ export async function GET(
   }
 
   // Omit password for security in this simple example, though in real apps we'd handle this better
-  const { ssh_pass, ...labData } = lab;
+  const { ...labData } = lab;
+  delete labData.ssh_pass;
 
   return new Response(JSON.stringify(labData), {
     status: 200,

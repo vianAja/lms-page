@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
+import { EmptyState, Icon } from '@/components/vn-ui';
 
 type ClassRow = {
   id: number;
@@ -34,7 +35,7 @@ export default function ClassListClient({ classes, csrfToken }: ClassListClientP
     () =>
       classes.map((row) => ({
         ...row,
-        shortDescription: row.description && row.description.length > 60 ? `${row.description.slice(0, 60)}...` : row.description || '-',
+        shortDescription: row.description && row.description.length > 80 ? `${row.description.slice(0, 80)}...` : row.description || 'No description yet.',
         createdLabel: new Date(row.created_at).toLocaleDateString(),
       })),
     [classes]
@@ -45,7 +46,7 @@ export default function ClassListClient({ classes, csrfToken }: ClassListClientP
     setError('');
 
     if (!name.trim()) {
-      setError('Class name is required');
+      setError('Class name is required.');
       return;
     }
 
@@ -78,8 +79,7 @@ export default function ClassListClient({ classes, csrfToken }: ClassListClientP
   };
 
   const handleDelete = async (classId: number) => {
-    const confirmed = window.confirm('Delete this class and all its labs?');
-    if (!confirmed) return;
+    if (!window.confirm('Delete this class and all of its labs?')) return;
 
     try {
       const response = await fetch(`/api/classes/${classId}`, {
@@ -102,102 +102,79 @@ export default function ClassListClient({ classes, csrfToken }: ClassListClientP
   };
 
   return (
-    <div className="w-full">
+    <div className="space-y-6">
       <meta name="csrf-token" content={csrfToken} />
 
-      <div className="flex items-center justify-between mb-6">
+      <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[#333]">Class Management</h1>
-          <p className="text-sm text-[#828282] mt-1">Create and manage classes and their lab sets.</p>
+          <h1 className="font-headline text-headline-lg text-on-surface">Classes</h1>
+          <p className="mt-1 text-body-md text-on-surface-variant">Create, organize, and monitor active learning cohorts.</p>
         </div>
-        <button
-          type="button"
-          onClick={() => setIsOpen((prev) => !prev)}
-          className="bg-[#2D9CDB] hover:bg-[#2789C2] text-white px-5 py-2.5 rounded-lg text-sm font-bold transition-all shadow-sm"
-        >
+        <button type="button" onClick={() => setIsOpen((prev) => !prev)} className="button-primary">
+          <Icon name="add" className="text-[18px]" />
           Create New Class
         </button>
-      </div>
+      </header>
 
-      {isOpen && (
-        <section className="mb-6 bg-white border border-[#E0E6ED] rounded-xl shadow-sm p-5">
-          <form onSubmit={handleCreate} className="space-y-4">
-            <div>
-              <label className="block text-sm font-semibold text-[#333] mb-1">Name</label>
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-lg border border-[#E0E6ED] px-3 py-2.5 text-sm text-[#333] outline-none focus:ring-2 focus:ring-[#2D9CDB]/30 focus:border-[#2D9CDB]"
-                placeholder="e.g. Intro to Linux"
-              />
+      {isOpen ? (
+        <section className="panel p-5">
+          <form onSubmit={handleCreate} className="grid gap-4 lg:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-label-caps text-on-surface-variant">Class Name</label>
+              <input value={name} onChange={(e) => setName(e.target.value)} className="field" placeholder="Jenkins Fundamentals" />
             </div>
-            <div>
-              <label className="block text-sm font-semibold text-[#333] mb-1">Description</label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-                className="w-full rounded-lg border border-[#E0E6ED] px-3 py-2.5 text-sm text-[#333] outline-none focus:ring-2 focus:ring-[#2D9CDB]/30 focus:border-[#2D9CDB]"
-                placeholder="Short summary for students"
-              />
+            <div className="space-y-2">
+              <label className="text-label-caps text-on-surface-variant">Description</label>
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)} className="field min-h-24" placeholder="Cohort summary and learning outcomes" />
             </div>
-            {error && <p className="text-sm text-red-500">{error}</p>}
-            <div className="flex justify-end">
-              <button
-                type="submit"
-                disabled={loading}
-                className="bg-[#2D9CDB] hover:bg-[#2789C2] text-white px-4 py-2 rounded-lg text-sm font-bold disabled:opacity-70"
-              >
-                {loading ? 'Creating...' : 'Submit'}
-              </button>
+            {error ? <p className="text-body-sm text-error lg:col-span-2">{error}</p> : null}
+            <div className="flex justify-end gap-3 lg:col-span-2">
+              <button type="button" onClick={() => setIsOpen(false)} className="button-secondary">Cancel</button>
+              <button type="submit" disabled={loading} className="button-primary">{loading ? 'Creating...' : 'Save Class'}</button>
             </div>
           </form>
         </section>
-      )}
+      ) : null}
 
-      <div className="bg-white border border-[#E0E6ED] rounded-xl shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-[#F9FBFC] border-b border-[#E0E6ED]">
-                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-[#828282]">Class Name</th>
-                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-[#828282]">Description</th>
-                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-[#828282]">Labs Count</th>
-                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-[#828282]">Created Date</th>
-                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-[#828282] text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#F2F5F8]">
-              {formattedRows.map((row) => (
-                <tr key={row.id} className="hover:bg-[#F9FBFC] transition-colors">
-                  <td className="px-6 py-4 font-semibold text-[#333]">{row.name}</td>
-                  <td className="px-6 py-4 text-sm text-[#828282]">{row.shortDescription}</td>
-                  <td className="px-6 py-4 text-sm font-semibold text-[#333]">{row.lab_count}</td>
-                  <td className="px-6 py-4 text-sm text-[#828282]">{row.createdLabel}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center justify-end gap-4 text-sm">
-                      <Link href={`/dashboard/classes/${row.id}`} className="text-[#2D9CDB] hover:text-[#2789C2] font-semibold">
-                        Manage Labs
-                      </Link>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(row.id)}
-                        className="text-red-500 hover:text-red-600 font-semibold"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
+      {formattedRows.length === 0 ? (
+        <EmptyState icon="assignment" title="No Classes Yet" copy="Create your first class to start organizing labs and enrollments." />
+      ) : (
+        <section className="panel overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left">
+              <thead className="border-b border-outline-variant bg-surface-container-high text-label-caps text-on-surface-variant">
+                <tr>
+                  <th className="px-5 py-4">Class</th>
+                  <th className="px-5 py-4">Description</th>
+                  <th className="px-5 py-4">Labs</th>
+                  <th className="px-5 py-4">Created</th>
+                  <th className="px-5 py-4 text-right">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {formattedRows.length === 0 && (
-          <div className="p-12 text-center text-sm text-[#828282]">No classes created yet.</div>
-        )}
-      </div>
+              </thead>
+              <tbody>
+                {formattedRows.map((row) => (
+                  <tr key={row.id} className="border-b border-outline-variant/60 transition-colors hover:bg-surface-variant">
+                    <td className="px-5 py-4">
+                      <div className="font-body text-body-md text-on-surface">{row.name}</div>
+                    </td>
+                    <td className="px-5 py-4 text-body-sm text-on-surface-variant">{row.shortDescription}</td>
+                    <td className="px-5 py-4 font-code text-code-md text-on-surface">{row.lab_count}</td>
+                    <td className="px-5 py-4 text-body-sm text-on-surface-variant">{row.createdLabel}</td>
+                    <td className="px-5 py-4">
+                      <div className="flex justify-end gap-3">
+                        <Link href={`/dashboard/classes/${row.id}`} className="button-secondary min-h-9 px-3 text-xs">Manage</Link>
+                        <button type="button" onClick={() => handleDelete(row.id)} className="rounded-sm border border-error/30 bg-error-container/15 px-3 py-2 font-code text-[12px] text-error transition-colors hover:border-error">
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

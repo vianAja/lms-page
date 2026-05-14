@@ -1,75 +1,53 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import Link from 'next/link';
-import { cookies } from 'next/headers';
-import { LockIcon } from 'lucide-react';
-import Header from '@/components/Header';
-import MarkdownViewer from '@/components/MarkdownViewer';
-import WebTerminal from '@/components/WebTerminal';
 import { db } from '@/lib/db';
+import { requireSession } from '@/lib/session';
+import { StudentFrame } from '@/components/AppFrame';
+import MarkdownViewer from '@/components/MarkdownViewer';
 import ResizableSplit from '@/components/ResizableSplit';
+import WebTerminal from '@/components/WebTerminal';
+import { EmptyState, StatusBadge } from '@/components/vn-ui';
 
 export default async function LabPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: labId } = await params;
+  const session = await requireSession();
 
-  const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get('user_session');
-  let username = '';
-  
-  if (sessionCookie) {
-    try {
-      const session = JSON.parse(sessionCookie.value);
-      username = session.username;
-      if (session.role !== 'admin') {
-        const accessResult = await db.query(
-          `
-            SELECT 1
-            FROM class_enrollments ce
-            JOIN labs l ON l.class_id = ce.class_id
-            WHERE ce.username = $1 AND l.lab_key = $2
-            LIMIT 1
-          `,
-          [username, labId]
-        );
-        const hasAccessByClass = accessResult.rowCount > 0;
+  if (session.role === 'student') {
+    const accessResult = await db.query(
+      `
+        SELECT 1
+        FROM class_enrollments ce
+        JOIN labs l ON l.class_id = ce.class_id
+        WHERE ce.username = $1 AND l.lab_key = $2
+        LIMIT 1
+      `,
+      [session.username, labId]
+    );
 
-        if (!hasAccessByClass) {
-          return (
-            <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4 text-white">
-              <div className="w-full max-w-xl rounded-2xl border border-zinc-800 bg-zinc-900/90 p-8 shadow-2xl text-center">
-                <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-red-500/10 border border-red-500/30">
-                  <LockIcon className="h-7 w-7 text-red-500" />
-                </div>
-                <h1 className="text-3xl font-bold text-red-500">Access Restricted</h1>
-                <p className="mt-3 text-zinc-400">
-                  You do not have permission to access this lab. Please contact your instructor.
-                </p>
-                <Link
-                  href="/"
-                  className="mt-7 inline-flex items-center rounded-lg bg-zinc-800 px-5 py-2.5 font-medium text-zinc-100 hover:bg-zinc-700 transition-colors"
-                >
-                  ← Back to Portal
-                </Link>
-              </div>
-            </div>
-          );
-        }
-      }
-    } catch (e) {
-      console.error('Failed to parse session cookie or check DB');
+    if (!accessResult.rowCount) {
+      return (
+        <StudentFrame name={session.fullname || session.username || 'Student'}>
+          <div className="mx-auto flex min-h-[calc(100dvh-4rem)] max-w-[1440px] items-center justify-center px-4 py-10">
+            <EmptyState
+              icon="lock"
+              title="Access Restricted"
+              copy="You do not have permission to open this lab environment."
+              cta={<Link href="/" className="button-primary">Go to Home</Link>}
+            />
+          </div>
+        </StudentFrame>
+      );
     }
   }
 
   let markdownContent = '';
-  let labTitle = `Lab ${labId.replace('-', '.')}`;
+  let labTitle = `Lab ${labId}`;
 
   try {
-    const dbResult = await db.query(
-      'SELECT title, content FROM labs WHERE lab_key = $1 LIMIT 1',
-      [labId]
-    );
-
+    const dbResult = await db.query('SELECT title, content FROM labs WHERE lab_key = $1 LIMIT 1', [labId]);
     const dbLab = dbResult.rows[0];
+
     if (dbLab?.title) {
       labTitle = dbLab.title;
     }
@@ -77,45 +55,65 @@ export default async function LabPage({ params }: { params: Promise<{ id: string
     if (dbLab?.content) {
       markdownContent = dbLab.content;
     } else {
-      const filePath = path.join(process.cwd(), 'page', `lab${labId}.md`);
-      markdownContent = await fs.readFile(filePath, 'utf8');
+      markdownContent = await fs.readFile(path.join(process.cwd(), 'page', `lab${labId}.md`), 'utf8');
     }
-  } catch (error) {
+  } catch {
     try {
-      const filePath = path.join(process.cwd(), 'page', `lab${labId}.md`);
-      markdownContent = await fs.readFile(filePath, 'utf8');
+      markdownContent = await fs.readFile(path.join(process.cwd(), 'page', `lab${labId}.md`), 'utf8');
     } catch {
       markdownContent = '# Lab Not Found\nThe requested lab document could not be loaded.';
     }
   }
 
+  const name = session.fullname || session.username || 'Student';
+
   return (
-    <div className="min-h-screen flex flex-col bg-zinc-950 text-white">
-      <Header title={`Lab ${labId.replace('-', '.')}`} />
-      <div className="w-full bg-white py-2 px-6 text-xs text-[#4F4F4F] border-b border-[#E0E6ED]">
-        <div className="flex items-center gap-3">
-          <Link href="/" className="text-[#828282] hover:text-[#333] transition-colors">
-            ← Back to Portal
-          </Link>
-          <span className="text-[#BDBDBD]">|</span>
+    <StudentFrame name={name} active="Class">
+      <div className="mx-auto flex h-[calc(100dvh-4rem)] max-w-[1440px] flex-col overflow-hidden">
+        <div className="flex h-12 items-center gap-3 border-b border-outline-variant bg-surface px-4 text-body-sm text-on-surface-variant md:px-6">
+          <Link href="/" className="transition-colors hover:text-primary">← Back to Portal</Link>
+          <span>|</span>
           <span>Lab: {labTitle}</span>
         </div>
-      </div>
-      
-      <ResizableSplit
-        leftPanel={
-          <div className="flex-1 p-8 overflow-y-auto custom-scrollbar">
-            <MarkdownViewer content={markdownContent} />
-          </div>
-        }
-        rightPanel={
-          <div className="flex-1 p-8 flex flex-col bg-zinc-950">
-            <div className="flex-1 min-h-0 relative">
-              <WebTerminal labId={labId} username={username} />
+
+        <ResizableSplit
+          leftPanel={
+            <div className="flex h-full flex-col">
+              <div className="border-b border-outline-variant bg-surface p-5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <StatusBadge status="warning" />
+                  <span className="rounded-full border border-outline-variant px-2.5 py-1 font-code text-[12px] text-on-surface-variant">45 min</span>
+                  <span className="rounded-full border border-primary-container/30 bg-primary-container/10 px-2.5 py-1 font-code text-[12px] text-primary">+120 XP</span>
+                </div>
+                <h1 className="mt-4 font-headline text-headline-lg text-on-surface">{labTitle}</h1>
+                <div className="mt-4">
+                  <div className="mb-2 flex items-center justify-between text-body-sm text-on-surface-variant">
+                    <span>Tasks: 2/4 completed</span>
+                    <span className="font-code">50%</span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2">
+                    {[true, true, false, false].map((filled, index) => (
+                      <div key={index} className={`h-2 rounded-full ${filled ? 'bg-primary-container shadow-[0_0_8px_rgba(14,165,233,0.5)]' : 'bg-surface-container-high'}`} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="min-h-0 flex-1 overflow-y-auto p-5">
+                <MarkdownViewer content={markdownContent} />
+              </div>
+              <div className="flex items-center justify-between border-t border-outline-variant bg-surface p-4">
+                <button className="button-secondary">← Previous Lab</button>
+                <button className="button-primary">Next Lab →</button>
+              </div>
             </div>
-          </div>
-        }
-      />
-    </div>
+          }
+          rightPanel={
+            <div className="h-full bg-black p-3">
+              <WebTerminal labId={labId} username={session.username || ''} />
+            </div>
+          }
+        />
+      </div>
+    </StudentFrame>
   );
 }

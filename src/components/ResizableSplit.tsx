@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
+import { Icon } from '@/components/vn-ui';
 
 interface ResizableSplitProps {
   leftPanel: React.ReactNode;
@@ -78,10 +79,10 @@ export default function ResizableSplit({ leftPanel, rightPanel, initialLeftWidth
   if (!isDesktop) {
     return (
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="h-[45vh] overflow-hidden flex flex-col border-b border-zinc-800 bg-zinc-900/20">
+        <div className="h-[45vh] overflow-hidden border-b border-outline-variant bg-surface-container">
           {leftPanel}
         </div>
-        <div className="h-[45vh] overflow-hidden flex flex-col bg-zinc-950">
+        <div className="h-[45vh] overflow-hidden bg-black">
           {rightPanel}
         </div>
       </div>
@@ -97,7 +98,7 @@ export default function ResizableSplit({ leftPanel, rightPanel, initialLeftWidth
       {/* Left Panel */}
       <div 
         style={{ width: `${leftWidth}%` }} 
-        className="overflow-hidden flex flex-col border-r border-zinc-800 bg-zinc-900/20"
+        className="overflow-hidden border-r border-outline-variant bg-surface-container"
       >
         {leftPanel}
       </div>
@@ -106,15 +107,15 @@ export default function ResizableSplit({ leftPanel, rightPanel, initialLeftWidth
       <div
         onMouseDown={startResizing}
         onTouchStart={startResizing}
-        className="w-1.5 flex-shrink-0 cursor-col-resize hover:bg-blue-500/50 active:bg-blue-500 transition-colors z-10 flex items-center justify-center group"
+        className="group z-10 flex w-[10px] flex-shrink-0 cursor-col-resize items-center justify-center bg-surface-container-highest transition-colors hover:bg-primary-container/30"
       >
-         <div className="w-0.5 h-8 bg-zinc-700 group-hover:bg-blue-300 rounded-full transition-colors"></div>
+        <Icon name="swap_horiz" className="text-[18px] text-on-surface-variant transition-colors group-hover:text-primary" />
       </div>
 
       {/* Right Panel */}
       <div 
         style={{ width: `${100 - leftWidth}%` }} 
-        className="flex flex-col bg-zinc-950"
+        className="flex flex-col bg-black"
       >
         {rightPanel}
       </div>

@@ -21,7 +21,7 @@ export default async function Header({ title }: HeaderProps) {
   if (sessionCookie) {
     try {
       sessionDetails = JSON.parse(sessionCookie.value) as SessionDetails;
-    } catch (e) {
+    } catch {
       console.error('Failed to parse session cookie for Header');
     }
   }

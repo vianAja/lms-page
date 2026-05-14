@@ -26,9 +26,9 @@ export function middleware(request: NextRequest) {
     
     // Protect dashboard route for admins only
     if (request.nextUrl.pathname.startsWith('/dashboard') && session.role !== 'admin') {
-      return NextResponse.redirect(new URL('/lab/1-1', request.url));
+      return NextResponse.redirect(new URL('/403', request.url));
     }
-  } catch (error) {
+  } catch {
     // Corrupted cookie
     return NextResponse.redirect(new URL('/login', request.url));
   }
