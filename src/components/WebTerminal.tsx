@@ -19,19 +19,23 @@ export default function WebTerminal({ labId, username }: WebTerminalProps) {
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<Terminal | null>(null);
   const socketRef = useRef<Socket | null>(null);
+  const connectSocketRef = useRef<(() => void) | null>(null);
   const reconnectAttemptRef = useRef(0);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isUnmountedRef = useRef(false);
-  const statusRef = useRef<'connecting' | 'connected' | 'reconnecting' | 'failed'>('connecting');
-  const [status, setStatus] = useState<'connecting' | 'connected' | 'reconnecting' | 'failed'>('connecting');
+  const statusRef = useRef<'idle' | 'connecting' | 'connected' | 'reconnecting' | 'failed'>('idle');
+  const [status, setStatus] = useState<'idle' | 'connecting' | 'connected' | 'reconnecting' | 'failed'>('idle');
   const [attempt, setAttempt] = useState(0);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [isConnectingVm, setIsConnectingVm] = useState(false);
 
   useEffect(() => {
     statusRef.current = status;
   }, [status]);
 
   useEffect(() => {
+    if (status !== 'connected') return;
+
     const interval = window.setInterval(() => {
       setElapsedSeconds((current) => current + 1);
     }, 1000);
@@ -39,7 +43,7 @@ export default function WebTerminal({ labId, username }: WebTerminalProps) {
     return () => {
       window.clearInterval(interval);
     };
-  }, [labId]);
+  }, [status]);
 
   useEffect(() => {
     if (!terminalRef.current) return;
@@ -70,6 +74,7 @@ export default function WebTerminal({ labId, username }: WebTerminalProps) {
     };
 
     const connectSocket = () => {
+      setIsConnectingVm(true);
       clearReconnectTimer();
       const currentSocket = socketRef.current;
       if (currentSocket) {
@@ -89,6 +94,7 @@ export default function WebTerminal({ labId, username }: WebTerminalProps) {
 
       socket.on('ssh-ready', () => {
         setStatus('connected');
+        setIsConnectingVm(false);
         term.write('\r\n\x1b[32m[Connected to SSH Proxy]\x1b[0m\r\n');
       });
 
@@ -98,6 +104,7 @@ export default function WebTerminal({ labId, username }: WebTerminalProps) {
 
       socket.on('ssh-error', (err: string) => {
         setStatus('failed');
+        setIsConnectingVm(false);
         clearReconnectTimer();
         reconnectAttemptRef.current = MAX_RECONNECT_ATTEMPTS;
         setAttempt(MAX_RECONNECT_ATTEMPTS);
@@ -126,7 +133,7 @@ export default function WebTerminal({ labId, username }: WebTerminalProps) {
       });
     };
 
-    connectSocket();
+    connectSocketRef.current = connectSocket;
 
     term.onData((data) => {
       socketRef.current?.emit('ssh-input', data);
@@ -140,15 +147,15 @@ export default function WebTerminal({ labId, username }: WebTerminalProps) {
       clearReconnectTimer();
       window.removeEventListener('resize', handleResize);
       socketRef.current?.disconnect();
+      connectSocketRef.current = null;
       term.dispose();
     };
   }, [labId, username]);
 
-  const handleRetry = () => {
-    reconnectAttemptRef.current = 0;
-    setAttempt(0);
-    setStatus('connecting');
-    socketRef.current?.disconnect();
+  const handleConnectVm = () => {
+    if (status === 'connected' || status === 'connecting' || status === 'reconnecting') return;
+    setElapsedSeconds(0);
+    connectSocketRef.current?.();
   };
 
   const statusDotClass =
@@ -167,7 +174,9 @@ export default function WebTerminal({ labId, username }: WebTerminalProps) {
         ? `Reconnecting... (attempt ${attempt} of ${MAX_RECONNECT_ATTEMPTS})`
         : status === 'failed'
           ? 'Connection failed.'
-          : 'Connecting to lab environment...';
+          : status === 'connecting'
+            ? 'Connecting to lab environment...'
+            : 'Disconnected';
 
   const hours = String(Math.floor(elapsedSeconds / 3600)).padStart(2, '0');
   const minutes = String(Math.floor((elapsedSeconds % 3600) / 60)).padStart(2, '0');
@@ -188,26 +197,27 @@ export default function WebTerminal({ labId, username }: WebTerminalProps) {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <button
+            type="button"
+            className="focus-ring inline-flex h-9 items-center rounded-sm border border-outline-variant bg-surface-container-low px-3 font-code text-[12px] text-on-surface transition-colors hover:border-primary-container hover:text-primary"
+          >
+            Grade
+          </button>
+          <button
+            type="button"
+            onClick={handleConnectVm}
+            disabled={isConnectingVm || status === 'connected'}
+            className="focus-ring inline-flex h-9 items-center gap-2 rounded-sm border border-primary-container bg-primary-container px-3 font-code text-[12px] text-white transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Icon name="play_arrow" className="text-[16px]" />
+            {isConnectingVm ? 'Connecting...' : status === 'connected' ? 'Started' : 'Start'}
+          </button>
           <div className="rounded-sm border border-outline-variant/50 bg-surface-variant/50 px-3 py-1 font-code tabular-nums text-on-surface">
             {hours}:{minutes}:{seconds}
           </div>
           <div className="flex items-center gap-2 font-code text-code-md">
             <span className={`h-2.5 w-2.5 rounded-full ${statusDotClass} ${status === 'connected' ? 'animate-pulse' : ''}`} />
             <span>{statusText}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <button aria-label="Keyboard shortcuts" className="focus-ring flex h-9 w-9 items-center justify-center rounded-sm border border-outline-variant bg-surface-container-low text-on-surface-variant transition-colors hover:border-primary-container hover:text-primary">
-              <Icon name="keyboard" className="text-[18px]" />
-            </button>
-            <button aria-label="Refresh terminal" onClick={handleRetry} className="focus-ring flex h-9 w-9 items-center justify-center rounded-sm border border-outline-variant bg-surface-container-low text-on-surface-variant transition-colors hover:border-primary-container hover:text-primary">
-              <Icon name="refresh" className="text-[18px]" />
-            </button>
-            <button aria-label="Clear terminal" className="focus-ring flex h-9 w-9 items-center justify-center rounded-sm border border-outline-variant bg-surface-container-low text-on-surface-variant transition-colors hover:border-primary-container hover:text-primary">
-              <Icon name="mop" className="text-[18px]" />
-            </button>
-            <button aria-label="Fullscreen terminal" className="focus-ring flex h-9 w-9 items-center justify-center rounded-sm border border-outline-variant bg-surface-container-low text-on-surface-variant transition-colors hover:border-primary-container hover:text-primary">
-              <Icon name="fullscreen" className="text-[18px]" />
-            </button>
           </div>
         </div>
       </div>

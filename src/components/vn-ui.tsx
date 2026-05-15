@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import StudentProfileMenu from '@/components/StudentProfileMenu';
 
 export function Icon({
   name,
@@ -163,16 +164,7 @@ export function TopAppBar({
             <Icon name="notifications" />
             <span className="absolute right-2 top-2 rounded-full bg-error px-1.5 py-0.5 font-code text-[10px] leading-none text-[#1b0000]">3</span>
           </button>
-          <div className="hidden items-center gap-3 rounded-sm border border-outline-variant bg-surface-container-high px-3 py-2 md:flex">
-            <UserAvatar name={name} />
-            <div className="min-w-0">
-              <div className="truncate font-body text-body-sm text-on-surface">{name}</div>
-              <div className="text-label-caps text-on-surface-variant">Student</div>
-            </div>
-          </div>
-          <div className="md:hidden">
-            <UserAvatar name={name} />
-          </div>
+          <StudentProfileMenu name={name} />
         </div>
       </div>
     </header>

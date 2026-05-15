@@ -69,46 +69,47 @@ export default async function LabPage({ params }: { params: Promise<{ id: string
 
   return (
     <StudentFrame name={name} active="Class">
-      <div className="mx-auto flex h-[calc(100dvh-4rem)] max-w-[1440px] flex-col overflow-hidden">
-        <div className="flex h-12 items-center gap-3 border-b border-outline-variant bg-surface px-4 text-body-sm text-on-surface-variant md:px-6">
+      <div className="mx-auto flex h-[calc(100dvh-4rem)] max-w-[1440px] flex-col overflow-hidden bg-surface-container-lowest">
+        <div className="flex h-11 items-center gap-3 border-b border-outline-variant bg-surface-dim px-4 text-body-sm text-on-surface-variant md:px-6">
           <Link href="/" className="transition-colors hover:text-primary">← Back to Portal</Link>
           <span>|</span>
           <span>Lab: {labTitle}</span>
         </div>
 
         <ResizableSplit
+          initialLeftWidth={56}
           leftPanel={
-            <div className="flex h-full flex-col">
-              <div className="border-b border-outline-variant bg-surface p-5">
+            <div className="flex h-full flex-col bg-background">
+              <div className="border-b border-outline-variant bg-background px-5 py-6">
                 <div className="flex flex-wrap items-center gap-2">
                   <StatusBadge status="warning" />
                   <span className="rounded-full border border-outline-variant px-2.5 py-1 font-code text-[12px] text-on-surface-variant">45 min</span>
                   <span className="rounded-full border border-primary-container/30 bg-primary-container/10 px-2.5 py-1 font-code text-[12px] text-primary">+120 XP</span>
                 </div>
-                <h1 className="mt-4 font-headline text-headline-lg text-on-surface">{labTitle}</h1>
-                <div className="mt-4">
+                <h1 className="mt-5 font-headline text-headline-lg text-on-surface">{labTitle}</h1>
+                <div className="mt-5">
                   <div className="mb-2 flex items-center justify-between text-body-sm text-on-surface-variant">
                     <span>Tasks: 2/4 completed</span>
                     <span className="font-code">50%</span>
                   </div>
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-4 gap-2.5">
                     {[true, true, false, false].map((filled, index) => (
                       <div key={index} className={`h-2 rounded-full ${filled ? 'bg-primary-container shadow-[0_0_8px_rgba(14,165,233,0.5)]' : 'bg-surface-container-high'}`} />
                     ))}
                   </div>
                 </div>
               </div>
-              <div className="min-h-0 flex-1 overflow-y-auto p-5">
+              <div className="min-h-0 flex-1 overflow-y-auto bg-surface-container-low px-5 py-6">
                 <MarkdownViewer content={markdownContent} />
               </div>
-              <div className="flex items-center justify-between border-t border-outline-variant bg-surface p-4">
+              <div className="flex items-center justify-between border-t border-outline-variant bg-surface-container-low px-4 py-3">
                 <button className="button-secondary">← Previous Lab</button>
                 <button className="button-primary">Next Lab →</button>
               </div>
             </div>
           }
           rightPanel={
-            <div className="h-full bg-black p-3">
+            <div className="h-full bg-[#000000] p-3">
               <WebTerminal labId={labId} username={session.username || ''} />
             </div>
           }

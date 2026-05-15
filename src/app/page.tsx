@@ -114,8 +114,11 @@ export default async function HomePage() {
           <div className="border-b border-outline-variant p-5">
             <h2 className="font-headline text-headline-md text-on-surface">My Classes</h2>
             <div className="relative mt-4">
-              <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" />
-              <input className="field pl-10" placeholder="Search labs..." />
+              <Icon
+                name="search"
+                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[18px] leading-none text-on-surface-variant"
+              />
+              <input className="field pl-11" placeholder="Search labs..." />
             </div>
             <div className="mt-4 flex gap-2">
               <button className="button-secondary min-h-9 px-3 text-xs">Class</button>

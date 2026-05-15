@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Icon } from '@/components/vn-ui';
 
 interface ResizableSplitProps {
   leftPanel: React.ReactNode;
@@ -107,9 +106,9 @@ export default function ResizableSplit({ leftPanel, rightPanel, initialLeftWidth
       <div
         onMouseDown={startResizing}
         onTouchStart={startResizing}
-        className="group z-10 flex w-[10px] flex-shrink-0 cursor-col-resize items-center justify-center bg-surface-container-highest transition-colors hover:bg-primary-container/30"
+        className="group z-10 flex w-[6px] flex-shrink-0 cursor-col-resize items-center justify-center bg-surface-container-highest transition-all hover:bg-primary-container/40 hover:shadow-[0_0_10px_rgba(14,165,233,0.5)]"
       >
-        <Icon name="swap_horiz" className="text-[18px] text-on-surface-variant transition-colors group-hover:text-primary" />
+        <div className="h-8 w-1 rounded-full bg-outline-variant transition-colors group-hover:bg-primary-container" />
       </div>
 
       {/* Right Panel */}

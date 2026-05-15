@@ -20,6 +20,64 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Run with PM2
+
+This project includes `pm2` in dependencies so you can run it as a managed process.
+
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Build the app:
+
+```bash
+npm run build
+```
+
+3. Jalankan dengan PM2:
+
+```bash
+npm run pm2:start
+```
+
+Aplikasi akan berjalan di **http://localhost:3067**
+
+4. Periksa status proses:
+
+```bash
+pm2 status
+# atau
+npm run pm2:status  # jika ditambahkan di package.json
+```
+
+5. Lihat logs aplikasi:
+
+```bash
+pm2 logs lms-page
+```
+
+6. Hentikan aplikasi jika perlu:
+
+```bash
+npm run pm2:stop
+```
+
+7. Restart aplikasi:
+
+```bash
+npm run pm2:restart
+```
+
+8. Hapus proses dari PM2:
+
+```bash
+npm run pm2:delete
+```
+
+**Catatan:** Konfigurasi PM2 ada di file `ecosystem.config.js` dengan PORT=3067 dan wrapper script di `start-pm2.sh`.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
