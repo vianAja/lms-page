@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { EmptyState, ToggleSwitch, UserAvatar } from '@/components/vn-ui';
+import { csrfFetch } from '@/lib/client/csrf';
 
 export type UserRow = {
   id: number;
@@ -17,11 +18,6 @@ type UserManagementClientProps = {
   currentUsername: string;
   csrfToken: string;
 };
-
-function resolveCsrfToken(initialToken: string): string {
-  const metaToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-  return metaToken || initialToken;
-}
 
 export default function UserManagementClient({ users, currentUsername, csrfToken }: UserManagementClientProps) {
   const router = useRouter();
@@ -44,14 +40,13 @@ export default function UserManagementClient({ users, currentUsername, csrfToken
 
     setLoading(true);
     try {
-      const response = await fetch('/api/users', {
+      const response = await csrfFetch('/api/users', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-Token': resolveCsrfToken(csrfToken),
         },
         body: JSON.stringify({ username: username.trim(), fullname: fullname.trim(), password, role }),
-      });
+      }, csrfToken);
 
       if (!response.ok) {
         const payload = await response.json().catch(() => ({ message: 'Failed to create user' }));
@@ -74,14 +69,13 @@ export default function UserManagementClient({ users, currentUsername, csrfToken
 
   const handleToggleActive = async (user: UserRow) => {
     try {
-      const response = await fetch(`/api/users/${user.id}`, {
+      const response = await csrfFetch(`/api/users/${user.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-Token': resolveCsrfToken(csrfToken),
         },
         body: JSON.stringify({ is_active: !user.is_active }),
-      });
+      }, csrfToken);
 
       if (!response.ok) {
         const payload = await response.json().catch(() => ({ message: 'Failed to update user status' }));

@@ -1,16 +1,27 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { BrandMark, Icon } from '@/components/vn-ui';
 
-export default function LoginPage() {
+function LoginForm() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [csrfToken, setCsrfToken] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    // Handle SSO errors from URL
+    const ssoError = searchParams.get('error');
+    if (ssoError === 'UnauthorizedEmail') {
+      setError('Access Denied: Your Google account is not authorized.');
+    } else if (ssoError) {
+      setError(`Authentication Error: ${ssoError}`);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const loadCsrfToken = async () => {
@@ -126,6 +137,20 @@ export default function LoginPage() {
             </button>
           </form>
 
+          <div className="flex items-center gap-4 py-2">
+            <div className="h-px flex-1 bg-outline-variant" />
+            <span className="text-label-sm text-on-surface-variant">OR</span>
+            <div className="h-px flex-1 bg-outline-variant" />
+          </div>
+
+          <a 
+            href="/api/auth/google" 
+            className="button-secondary w-full flex items-center justify-center gap-2"
+          >
+            <Icon name="login" className="text-[18px]" />
+            Sign in with Google
+          </a>
+
           <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.12em] text-on-surface-variant">
             <Icon name="lock" className="text-[14px]" />
             Secure login • Session expires in 8 hours
@@ -133,5 +158,13 @@ export default function LoginPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

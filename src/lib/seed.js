@@ -38,7 +38,7 @@ async function checkAndCreateTable() {
 
     // Define users and passwords
     const users = [
-      { username: 'lms_admin', fullname: 'LMS Administrator', password: 'Lms#123', role: 'admin' },
+      { username: 'admin', fullname: 'LMS Administrator', password: 'n4jw4n08', role: 'admin' },
       { username: 'super_admin', fullname: 'Super Admin', password: 'password123', role: 'admin' },
       { username: 'vian', fullname: 'Vian Student', password: '123', role: 'student' },
       { username: 'najwan', fullname: 'Najwan Student', password: '123', role: 'student' }
@@ -61,17 +61,19 @@ async function checkAndCreateTable() {
       `, [user.username]);
     }
 
-    // Map app user 'vian' to system user 'vian-lms'
-    // Update SSH password to 'Najwan@Oct408'
+    // Map app user 'vian' to system user 'lmsuser'
+    // Update SSH password to 'admin123'
+    const { encrypt } = require('./crypto');
+    const encryptedPass = encrypt('admin123');
     await client.query(`
       INSERT INTO lab_sessions (lab_id, app_user, ssh_host, ssh_user, ssh_pass, ssh_port) VALUES 
-      ('1-1', 'vian', 'localhost', 'vian-lms', 'Najwan@Oct408', 22)
+      ('1-1', 'vian', 'host.docker.internal', 'lmsuser', $1, 22)
       ON CONFLICT (lab_id, app_user) DO UPDATE SET 
         ssh_host = EXCLUDED.ssh_host,
         ssh_user = EXCLUDED.ssh_user, 
         ssh_pass = EXCLUDED.ssh_pass,
         ssh_port = EXCLUDED.ssh_port;
-    `);
+    `, [encryptedPass]);
 
     console.log('Database seeded successfully with fullname and lab access.');
   } catch (error) {

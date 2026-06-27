@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { EmptyState, Icon } from '@/components/vn-ui';
+import { csrfFetch } from '@/lib/client/csrf';
 
 type ClassRow = {
   id: number;
@@ -17,11 +18,6 @@ type ClassListClientProps = {
   classes: ClassRow[];
   csrfToken: string;
 };
-
-function resolveCsrfToken(initialToken: string): string {
-  const metaToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-  return metaToken || initialToken;
-}
 
 export default function ClassListClient({ classes, csrfToken }: ClassListClientProps) {
   const router = useRouter();
@@ -52,14 +48,13 @@ export default function ClassListClient({ classes, csrfToken }: ClassListClientP
 
     setLoading(true);
     try {
-      const response = await fetch('/api/classes', {
+      const response = await csrfFetch('/api/classes', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-Token': resolveCsrfToken(csrfToken),
         },
         body: JSON.stringify({ name: name.trim(), description: description.trim() || undefined }),
-      });
+      }, csrfToken);
 
       if (!response.ok) {
         const payload = await response.json().catch(() => ({ message: 'Failed to create class' }));
@@ -82,12 +77,9 @@ export default function ClassListClient({ classes, csrfToken }: ClassListClientP
     if (!window.confirm('Delete this class and all of its labs?')) return;
 
     try {
-      const response = await fetch(`/api/classes/${classId}`, {
+      const response = await csrfFetch(`/api/classes/${classId}`, {
         method: 'DELETE',
-        headers: {
-          'X-CSRF-Token': resolveCsrfToken(csrfToken),
-        },
-      });
+      }, csrfToken);
 
       if (!response.ok && response.status !== 204) {
         const payload = await response.json().catch(() => ({ message: 'Failed to delete class' }));

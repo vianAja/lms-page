@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import MarkdownViewer from '@/components/MarkdownViewer';
+import { csrfFetch, refreshCsrfToken } from '@/lib/client/csrf';
 
 type LabDetail = {
   id: number;
@@ -31,9 +32,9 @@ export default function EditLabPage() {
   useEffect(() => {
     const init = async () => {
       try {
-        const [labResponse, csrfResponse] = await Promise.all([
+        const [labResponse, csrfTokenValue] = await Promise.all([
           fetch(`/api/labs/${labId}`),
-          fetch('/api/csrf'),
+          refreshCsrfToken(),
         ]);
 
         if (!labResponse.ok) {
@@ -48,8 +49,7 @@ export default function EditLabPage() {
         setOrderNum(Number(labData.order_num ?? 1));
         setContent(labData.content || '');
 
-        const csrfData = await csrfResponse.json();
-        setCsrfToken(csrfData.csrf_token || '');
+        setCsrfToken(csrfTokenValue || '');
       } catch {
         setError('Failed to initialize editor');
       } finally {
@@ -80,18 +80,17 @@ export default function EditLabPage() {
 
     setLoading(true);
     try {
-      const response = await fetch(`/api/labs/${labId}`, {
+      const response = await csrfFetch(`/api/labs/${labId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfToken,
         },
         body: JSON.stringify({
           title: title.trim(),
           content,
           order_num: orderNum,
         }),
-      });
+      }, csrfToken);
 
       if (!response.ok) {
         const data = await response.json().catch(() => ({ message: 'Failed to update lab' }));

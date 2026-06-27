@@ -39,12 +39,14 @@ function Sidebar({
     <div className="flex h-full w-80 flex-col border-r border-outline-variant bg-surface px-4 py-5">
       <div className="border-b border-outline-variant pb-5">
         <BrandMark />
-        <div className="pt-3 text-label-caps text-on-surface-variant">Admin Panel</div>
       </div>
 
       <nav className="flex-1 space-y-2 py-5">
         {navItems.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          const isOverview = item.href === '/dashboard';
+          const isActive = isOverview
+            ? pathname === '/dashboard'
+            : pathname === item.href || pathname.startsWith(`${item.href}/`);
           return (
             <Link
               key={item.href}

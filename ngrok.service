@@ -1,0 +1,18 @@
+[Unit]
+Description=Ngrok Tunnel Service for LMS
+After=network.target
+
+[Service]
+Type=simple
+# Pastikan path ngrok sesuai dengan sistem Anda (misal /usr/local/bin/ngrok atau /snap/bin/ngrok).
+# Anda bisa mengeceknya dengan command: which ngrok
+ExecStart=/usr/bin/env ngrok http --url=unfretting-hintingly-susy.ngrok-free.dev 3000
+Restart=on-failure
+RestartSec=5
+User=vian
+
+# [PENTING] Masukkan NGROK_AUTHTOKEN Anda di sini agar tidak terjadi error 4018
+Environment="NGROK_AUTHTOKEN=MASUKKAN_TOKEN_NGROK_ANDA_DISINI"
+
+[Install]
+WantedBy=multi-user.target

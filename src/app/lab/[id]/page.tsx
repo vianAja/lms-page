@@ -4,10 +4,8 @@ import Link from 'next/link';
 import { db } from '@/lib/db';
 import { requireSession } from '@/lib/session';
 import { StudentFrame } from '@/components/AppFrame';
-import MarkdownViewer from '@/components/MarkdownViewer';
-import ResizableSplit from '@/components/ResizableSplit';
-import WebTerminal from '@/components/WebTerminal';
-import { EmptyState, StatusBadge } from '@/components/vn-ui';
+import { EmptyState } from '@/components/vn-ui';
+import LabShellClient from '@/components/LabShellClient';
 
 export default async function LabPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: labId } = await params;
@@ -43,9 +41,13 @@ export default async function LabPage({ params }: { params: Promise<{ id: string
 
   let markdownContent = '';
   let labTitle = `Lab ${labId}`;
+  let nextLabHref: string | null = null;
 
   try {
-    const dbResult = await db.query('SELECT title, content FROM labs WHERE lab_key = $1 LIMIT 1', [labId]);
+    const dbResult = await db.query(
+      'SELECT id, class_id, order_num, title, content FROM labs WHERE lab_key = $1 LIMIT 1',
+      [labId]
+    );
     const dbLab = dbResult.rows[0];
 
     if (dbLab?.title) {
@@ -56,6 +58,22 @@ export default async function LabPage({ params }: { params: Promise<{ id: string
       markdownContent = dbLab.content;
     } else {
       markdownContent = await fs.readFile(path.join(process.cwd(), 'page', `lab${labId}.md`), 'utf8');
+    }
+
+    if (dbLab?.class_id && typeof dbLab.order_num === 'number') {
+      const nextResult = await db.query<{ lab_key: string }>(
+        `
+          SELECT lab_key
+          FROM labs
+          WHERE class_id = $1 AND order_num > $2
+          ORDER BY order_num ASC, id ASC
+          LIMIT 1
+        `,
+        [dbLab.class_id, dbLab.order_num]
+      );
+      if (nextResult.rows[0]?.lab_key) {
+        nextLabHref = `/lab/${nextResult.rows[0].lab_key}`;
+      }
     }
   } catch {
     try {
@@ -69,52 +87,13 @@ export default async function LabPage({ params }: { params: Promise<{ id: string
 
   return (
     <StudentFrame name={name} active="Class">
-      <div className="mx-auto flex h-[calc(100dvh-4rem)] max-w-[1440px] flex-col overflow-hidden bg-surface-container-lowest">
-        <div className="flex h-11 items-center gap-3 border-b border-outline-variant bg-surface-dim px-4 text-body-sm text-on-surface-variant md:px-6">
-          <Link href="/" className="transition-colors hover:text-primary">← Back to Portal</Link>
-          <span>|</span>
-          <span>Lab: {labTitle}</span>
-        </div>
-
-        <ResizableSplit
-          initialLeftWidth={56}
-          leftPanel={
-            <div className="flex h-full flex-col bg-background">
-              <div className="border-b border-outline-variant bg-background px-5 py-6">
-                <div className="flex flex-wrap items-center gap-2">
-                  <StatusBadge status="warning" />
-                  <span className="rounded-full border border-outline-variant px-2.5 py-1 font-code text-[12px] text-on-surface-variant">45 min</span>
-                  <span className="rounded-full border border-primary-container/30 bg-primary-container/10 px-2.5 py-1 font-code text-[12px] text-primary">+120 XP</span>
-                </div>
-                <h1 className="mt-5 font-headline text-headline-lg text-on-surface">{labTitle}</h1>
-                <div className="mt-5">
-                  <div className="mb-2 flex items-center justify-between text-body-sm text-on-surface-variant">
-                    <span>Tasks: 2/4 completed</span>
-                    <span className="font-code">50%</span>
-                  </div>
-                  <div className="grid grid-cols-4 gap-2.5">
-                    {[true, true, false, false].map((filled, index) => (
-                      <div key={index} className={`h-2 rounded-full ${filled ? 'bg-primary-container shadow-[0_0_8px_rgba(14,165,233,0.5)]' : 'bg-surface-container-high'}`} />
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <div className="min-h-0 flex-1 overflow-y-auto bg-surface-container-low px-5 py-6">
-                <MarkdownViewer content={markdownContent} />
-              </div>
-              <div className="flex items-center justify-between border-t border-outline-variant bg-surface-container-low px-4 py-3">
-                <button className="button-secondary">← Previous Lab</button>
-                <button className="button-primary">Next Lab →</button>
-              </div>
-            </div>
-          }
-          rightPanel={
-            <div className="h-full bg-[#000000] p-3">
-              <WebTerminal labId={labId} username={session.username || ''} />
-            </div>
-          }
-        />
-      </div>
+      <LabShellClient
+        labId={labId}
+        labTitle={labTitle}
+        markdownContent={markdownContent}
+        username={session.username || ''}
+        nextLabHref={nextLabHref}
+      />
     </StudentFrame>
   );
 }

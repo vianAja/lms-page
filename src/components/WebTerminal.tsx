@@ -10,12 +10,21 @@ import { Icon } from '@/components/vn-ui';
 interface WebTerminalProps {
   labId: string;
   username: string;
+  connectSignal?: number;
+  disconnectSignal?: number;
+  onStatusChange?: (status: 'idle' | 'connecting' | 'connected' | 'reconnecting' | 'failed') => void;
 }
 
 const MAX_RECONNECT_ATTEMPTS = 3;
 const RECONNECT_DELAYS_MS = [1000, 2000, 4000];
 
-export default function WebTerminal({ labId, username }: WebTerminalProps) {
+export default function WebTerminal({
+  labId,
+  username,
+  connectSignal = 0,
+  disconnectSignal = 0,
+  onStatusChange,
+}: WebTerminalProps) {
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<Terminal | null>(null);
   const socketRef = useRef<Socket | null>(null);
@@ -27,11 +36,11 @@ export default function WebTerminal({ labId, username }: WebTerminalProps) {
   const [status, setStatus] = useState<'idle' | 'connecting' | 'connected' | 'reconnecting' | 'failed'>('idle');
   const [attempt, setAttempt] = useState(0);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [isConnectingVm, setIsConnectingVm] = useState(false);
 
   useEffect(() => {
     statusRef.current = status;
-  }, [status]);
+    onStatusChange?.(status);
+  }, [onStatusChange, status]);
 
   useEffect(() => {
     if (status !== 'connected') return;
@@ -74,7 +83,6 @@ export default function WebTerminal({ labId, username }: WebTerminalProps) {
     };
 
     const connectSocket = () => {
-      setIsConnectingVm(true);
       clearReconnectTimer();
       const currentSocket = socketRef.current;
       if (currentSocket) {
@@ -94,7 +102,6 @@ export default function WebTerminal({ labId, username }: WebTerminalProps) {
 
       socket.on('ssh-ready', () => {
         setStatus('connected');
-        setIsConnectingVm(false);
         term.write('\r\n\x1b[32m[Connected to SSH Proxy]\x1b[0m\r\n');
       });
 
@@ -104,7 +111,6 @@ export default function WebTerminal({ labId, username }: WebTerminalProps) {
 
       socket.on('ssh-error', (err: string) => {
         setStatus('failed');
-        setIsConnectingVm(false);
         clearReconnectTimer();
         reconnectAttemptRef.current = MAX_RECONNECT_ATTEMPTS;
         setAttempt(MAX_RECONNECT_ATTEMPTS);
@@ -158,6 +164,35 @@ export default function WebTerminal({ labId, username }: WebTerminalProps) {
     connectSocketRef.current?.();
   };
 
+  const handleStopVm = () => {
+    reconnectAttemptRef.current = 0;
+    setAttempt(0);
+    if (reconnectTimerRef.current) {
+      clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
+    socketRef.current?.removeAllListeners();
+    socketRef.current?.disconnect();
+    socketRef.current = null;
+    setElapsedSeconds(0);
+    setStatus('idle');
+    xtermRef.current?.write('\r\n\x1b[33m[Session closed]\x1b[0m\r\n');
+  };
+
+  useEffect(() => {
+    if (connectSignal <= 0) return;
+    handleConnectVm();
+    // Intentionally reacting to parent start signal.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connectSignal]);
+
+  useEffect(() => {
+    if (disconnectSignal <= 0) return;
+    handleStopVm();
+    // Intentionally reacting to parent stop signal.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [disconnectSignal]);
+
   const statusDotClass =
     status === 'connected'
       ? 'bg-secondary'
@@ -197,21 +232,6 @@ export default function WebTerminal({ labId, username }: WebTerminalProps) {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            type="button"
-            className="focus-ring inline-flex h-9 items-center rounded-sm border border-outline-variant bg-surface-container-low px-3 font-code text-[12px] text-on-surface transition-colors hover:border-primary-container hover:text-primary"
-          >
-            Grade
-          </button>
-          <button
-            type="button"
-            onClick={handleConnectVm}
-            disabled={isConnectingVm || status === 'connected'}
-            className="focus-ring inline-flex h-9 items-center gap-2 rounded-sm border border-primary-container bg-primary-container px-3 font-code text-[12px] text-white transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <Icon name="play_arrow" className="text-[16px]" />
-            {isConnectingVm ? 'Connecting...' : status === 'connected' ? 'Started' : 'Start'}
-          </button>
           <div className="rounded-sm border border-outline-variant/50 bg-surface-variant/50 px-3 py-1 font-code tabular-nums text-on-surface">
             {hours}:{minutes}:{seconds}
           </div>
@@ -222,10 +242,6 @@ export default function WebTerminal({ labId, username }: WebTerminalProps) {
         </div>
       </div>
       <div ref={terminalRef} className="w-full flex-1 p-3" />
-      <div className="flex items-center justify-between border-t border-outline-variant bg-black px-4 py-2 font-code text-[12px] text-on-surface-variant">
-        <span>Lines: 34 | Cols: 120</span>
-        <span>xterm.js v5 | SSH2</span>
-      </div>
     </div>
   );
 }

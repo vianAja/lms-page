@@ -2,17 +2,13 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { csrfFetch } from '@/lib/client/csrf';
 
 type LabRowActionsProps = {
   classId: number;
   labId: number;
   csrfToken: string;
 };
-
-function resolveCsrfToken(initialToken: string): string {
-  const metaToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-  return metaToken || initialToken;
-}
 
 export default function LabRowActions({ classId, labId, csrfToken }: LabRowActionsProps) {
   const router = useRouter();
@@ -22,12 +18,9 @@ export default function LabRowActions({ classId, labId, csrfToken }: LabRowActio
     if (!confirmed) return;
 
     try {
-      const response = await fetch(`/api/labs/${labId}`, {
+      const response = await csrfFetch(`/api/labs/${labId}`, {
         method: 'DELETE',
-        headers: {
-          'X-CSRF-Token': resolveCsrfToken(csrfToken),
-        },
-      });
+      }, csrfToken);
 
       if (!response.ok && response.status !== 204) {
         const payload = await response.json().catch(() => ({ message: 'Failed to delete lab' }));
@@ -42,14 +35,18 @@ export default function LabRowActions({ classId, labId, csrfToken }: LabRowActio
   };
 
   return (
-    <div className="flex items-center gap-4 text-sm justify-end">
+    <div className="flex items-center justify-end gap-3">
       <Link
         href={`/dashboard/classes/${classId}/labs/${labId}/edit`}
-        className="text-[#2D9CDB] hover:text-[#2789C2] font-semibold"
+        className="button-secondary min-h-9 px-3 text-xs"
       >
         Edit
       </Link>
-      <button type="button" onClick={handleDelete} className="text-red-500 hover:text-red-600 font-semibold">
+      <button
+        type="button"
+        onClick={handleDelete}
+        className="rounded-sm border border-error/30 bg-error-container/15 px-3 py-2 font-code text-[12px] text-error transition-colors hover:border-error"
+      >
         Delete
       </button>
     </div>

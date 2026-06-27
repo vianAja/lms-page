@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import MarkdownViewer from '@/components/MarkdownViewer';
+import { csrfFetch, refreshCsrfToken } from '@/lib/client/csrf';
 
 export default function NewLabPage() {
   const params = useParams<{ id: string }>();
@@ -21,9 +22,8 @@ export default function NewLabPage() {
   useEffect(() => {
     const fetchCsrf = async () => {
       try {
-        const response = await fetch('/api/csrf');
-        const data = await response.json();
-        setCsrfToken(data.csrf_token || '');
+        const token = await refreshCsrfToken();
+        setCsrfToken(token);
       } catch {
         setError('Unable to initialize CSRF token. Please refresh the page.');
       }
@@ -47,11 +47,10 @@ export default function NewLabPage() {
 
     setLoading(true);
     try {
-      const response = await fetch('/api/labs', {
+      const response = await csrfFetch('/api/labs', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfToken,
         },
         body: JSON.stringify({
           class_id: classId,
@@ -60,7 +59,7 @@ export default function NewLabPage() {
           content,
           order_num: orderNum,
         }),
-      });
+      }, csrfToken);
 
       if (!response.ok) {
         const data = await response.json().catch(() => ({ message: 'Failed to create lab' }));

@@ -5,7 +5,6 @@ import { db } from '@/lib/db';
 import { requireStudentSession } from '@/lib/session';
 import { StudentFrame } from '@/components/AppFrame';
 import MarkdownViewer from '@/components/MarkdownViewer';
-import WebTerminal from '@/components/WebTerminal';
 import { EmptyState, Icon, StatusBadge } from '@/components/vn-ui';
 
 type ClassLabRow = {
@@ -29,7 +28,6 @@ type LabCardData = {
     lab_key: string;
     title: string;
     order_num: number;
-    progress: number;
     state: 'in-progress' | 'locked' | 'completed';
   }>;
 };
@@ -51,13 +49,11 @@ function mapClasses(rows: ClassLabRow[]) {
     }
 
     if (row.lab_id && row.lab_key && row.lab_title && row.order_num !== null) {
-      const progress = row.order_num === 1 ? 60 : row.order_num === 2 ? 0 : 100;
       classMap.get(row.class_id)!.labs.push({
         id: row.lab_id,
         lab_key: row.lab_key,
         title: row.lab_title,
         order_num: row.order_num,
-        progress,
         state: row.order_num === 1 ? 'in-progress' : row.order_num === 2 ? 'locked' : 'completed',
       });
     }
@@ -172,9 +168,6 @@ export default async function HomePage() {
                             className={lab.state === 'locked' ? 'text-error' : lab.state === 'completed' ? 'text-secondary' : 'text-on-surface-variant'}
                           />
                         </div>
-                        <div className="mt-3 h-1 rounded-full bg-surface-container-high">
-                          <div className="h-1 rounded-full bg-secondary" style={{ width: `${lab.progress}%` }} />
-                        </div>
                       </Link>
                     ))}
                   </div>
@@ -201,16 +194,13 @@ export default async function HomePage() {
           </div>
 
           {featuredLab ? (
-            <div className="grid min-h-0 flex-1 grid-cols-1 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
-              <div className="min-h-0 overflow-y-auto border-b border-outline-variant bg-surface p-5 md:border-b-0 md:border-r">
+            <div className="min-h-0 flex-1">
+              <div className="h-full overflow-y-auto border-b border-outline-variant bg-surface p-5 md:border-b-0">
                 <div className="mb-4 flex items-center gap-3">
                   <StatusBadge status="active" />
                   <span className="text-body-sm text-on-surface-variant">Connected learning workspace</span>
                 </div>
                 <MarkdownViewer content={previewContent} />
-              </div>
-              <div className="min-h-[45vh] bg-black p-3">
-                <WebTerminal labId={featuredLab.lab_key} username={session.username || ''} />
               </div>
             </div>
           ) : (

@@ -14,6 +14,34 @@ const app = next({ dev });
 const handle = app.getRequestHandler();
 
 app.prepare().then(() => {
+  const buildLabIdCandidates = (rawLabId) => {
+    const source = String(rawLabId || '').trim();
+    const values = new Set();
+
+    if (!source) return [];
+    values.add(source);
+
+    // Handle "lab01-1" / "lab1-1" -> "1-1"
+    const prefixed = source.match(/^lab(\d+)-(\d+)$/i);
+    if (prefixed) {
+      const major = String(parseInt(prefixed[1], 10));
+      const minor = String(parseInt(prefixed[2], 10));
+      values.add(`${major}-${minor}`);
+      values.add(`lab${major}-${minor}`);
+    }
+
+    // Handle "01-01" -> "1-1", and reverse to "lab1-1"
+    const plain = source.match(/^(\d+)-(\d+)$/);
+    if (plain) {
+      const major = String(parseInt(plain[1], 10));
+      const minor = String(parseInt(plain[2], 10));
+      values.add(`${major}-${minor}`);
+      values.add(`lab${major}-${minor}`);
+    }
+
+    return Array.from(values);
+  };
+
   const server = createServer((req, res) => {
     const parsedUrl = parse(req.url, true);
     handle(req, res, parsedUrl);
@@ -28,16 +56,26 @@ app.prepare().then(() => {
 
     socket.on('init-ssh', async ({ labId, appUser }) => {
       try {
+        const candidates = buildLabIdCandidates(labId);
+
         const result = await db.query(
-          'SELECT * FROM lab_sessions WHERE lab_id = $1 AND app_user = $2',
-          [labId, appUser]
+          'SELECT * FROM lab_sessions WHERE lab_id = ANY($1) AND app_user = $2 LIMIT 1',
+          [candidates, appUser]
         );
         const lab = result.rows[0];
 
         if (!lab) {
-        socket.emit('ssh-error', 'Lab session not found');
-        return;
-      }
+          socket.emit('ssh-error', `Lab session not found for ${labId}`);
+          return;
+        }
+
+        let sshPass = lab.ssh_pass;
+        try {
+          const { decrypt } = require('./src/lib/crypto');
+          sshPass = decrypt(lab.ssh_pass);
+        } catch (e) {
+          console.error('Error decrypting ssh_pass, using fallback/raw value', e);
+        }
 
       sshClient = new Client();
       sshClient
@@ -69,7 +107,7 @@ app.prepare().then(() => {
           host: lab.ssh_host,
           port: lab.ssh_port,
           username: lab.ssh_user,
-          password: lab.ssh_pass,
+          password: sshPass,
         });
       } catch (error) {
         console.error('Error connecting to ssh or db:', error);

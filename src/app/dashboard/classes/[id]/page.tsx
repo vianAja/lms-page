@@ -66,41 +66,41 @@ export default async function ClassLabsPage({ params }: { params: Promise<{ id: 
   const labs = labsResult.rows;
 
   return (
-    <div className="w-full">
+    <div className="w-full space-y-6">
       <meta name="csrf-token" content={session.csrf_token || ''} />
 
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[#333]">{classItem.name}</h1>
-          <p className="text-sm text-[#828282] mt-1">Manage labs for this class.</p>
+          <h1 className="font-headline text-headline-lg text-on-surface">{classItem.name}</h1>
+          <p className="mt-1 text-body-md text-on-surface-variant">Manage labs for this class.</p>
         </div>
         <Link
           href={`/dashboard/classes/${classId}/labs/new`}
-          className="bg-[#2D9CDB] hover:bg-[#2789C2] text-white px-5 py-2.5 rounded-lg text-sm font-bold transition-all shadow-sm"
+          className="button-primary"
         >
           Add New Lab
         </Link>
       </div>
 
-      <div className="bg-white border border-[#E0E6ED] rounded-xl shadow-sm overflow-hidden">
+      <div className="panel overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-[#F9FBFC] border-b border-[#E0E6ED]">
-                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-[#828282]">Order</th>
-                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-[#828282]">Lab Key</th>
-                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-[#828282]">Title</th>
-                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-[#828282]">Last Updated</th>
-                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-[#828282] text-right">Actions</th>
+          <table className="w-full text-left">
+            <thead className="border-b border-outline-variant bg-surface-container-high text-label-caps text-on-surface-variant">
+              <tr>
+                <th className="px-6 py-4">Order</th>
+                <th className="px-6 py-4">Lab Key</th>
+                <th className="px-6 py-4">Title</th>
+                <th className="px-6 py-4">Last Updated</th>
+                <th className="px-6 py-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#F2F5F8]">
+            <tbody>
               {labs.map((lab: LabRow) => (
-                <tr key={lab.id} className="hover:bg-[#F9FBFC] transition-colors">
-                  <td className="px-6 py-4 text-sm font-semibold text-[#333]">{lab.order_num}</td>
-                  <td className="px-6 py-4 text-sm font-mono text-[#333]">{lab.lab_key}</td>
-                  <td className="px-6 py-4 text-sm text-[#333] font-medium">{lab.title}</td>
-                  <td className="px-6 py-4 text-sm text-[#828282]">{new Date(lab.updated_at).toLocaleString()}</td>
+                <tr key={lab.id} className="border-b border-outline-variant/60 transition-colors hover:bg-surface-variant">
+                  <td className="px-6 py-4 font-code text-code-md text-on-surface">{lab.order_num}</td>
+                  <td className="px-6 py-4 font-code text-code-md text-on-surface">{lab.lab_key}</td>
+                  <td className="px-6 py-4 text-body-md font-semibold text-on-surface">{lab.title}</td>
+                  <td className="px-6 py-4 text-body-sm text-on-surface-variant">{new Date(lab.updated_at).toLocaleString()}</td>
                   <td className="px-6 py-4">
                     <LabRowActions classId={classId} labId={lab.id} csrfToken={session.csrf_token || ''} />
                   </td>
@@ -111,7 +111,7 @@ export default async function ClassLabsPage({ params }: { params: Promise<{ id: 
         </div>
 
         {labs.length === 0 && (
-          <div className="p-12 text-center text-sm text-[#828282]">No labs in this class yet.</div>
+          <div className="p-12 text-center text-body-sm text-on-surface-variant">No labs in this class yet.</div>
         )}
       </div>
     </div>
