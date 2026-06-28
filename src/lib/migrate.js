@@ -29,14 +29,29 @@ async function migrate() {
       CREATE TABLE IF NOT EXISTS labs (
         id SERIAL PRIMARY KEY,
         class_id INTEGER REFERENCES classes(id) ON DELETE CASCADE,
+        topic_key VARCHAR(255),
+        topic_name VARCHAR(255),
         lab_key VARCHAR(255) UNIQUE NOT NULL,
         title VARCHAR(255) NOT NULL,
-        content TEXT NOT NULL,
+        description TEXT,
+        content TEXT DEFAULT '',
         order_num INTEGER DEFAULT 0,
+        icon VARCHAR(100),
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       )
     `);
+
+    console.log('Step 3b/5: Patching existing labs table with missing columns (if any)...');
+    const labsPatch = [
+      `ALTER TABLE labs ADD COLUMN IF NOT EXISTS topic_key VARCHAR(255)`,
+      `ALTER TABLE labs ADD COLUMN IF NOT EXISTS topic_name VARCHAR(255)`,
+      `ALTER TABLE labs ADD COLUMN IF NOT EXISTS description TEXT`,
+      `ALTER TABLE labs ADD COLUMN IF NOT EXISTS icon VARCHAR(100)`,
+    ];
+    for (const sql of labsPatch) {
+      await client.query(sql);
+    }
 
     console.log('Step 4/5: Creating class_enrollments table (if not exists)...');
     await client.query(`
@@ -48,6 +63,10 @@ async function migrate() {
         UNIQUE(username, class_id)
       )
     `);
+
+    console.log('Step 4b/5: Patching lab_access to use lab_key column (if not exists)...');
+    await client.query(`ALTER TABLE lab_access ADD COLUMN IF NOT EXISTS lab_key VARCHAR(255)`);
+    await client.query(`UPDATE lab_access SET lab_key = lab_id WHERE lab_key IS NULL`);
 
     console.log('Step 5/6: Creating csrf_tokens table (if not exists)...');
     await client.query(`
