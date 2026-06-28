@@ -1,3 +1,5 @@
+![1782625618118](image/docker-1/1782625618118.png)![1782625618118](image/docker-1/1782625618118.png)![1782625618118](image/docker-1/1782625618118.png)
+
 # Lab Docker 1 — Menjalankan Container nginx:latest
 
 > **Tujuan:** Setelah menyelesaikan lab ini, kamu akan mampu menarik image Docker, menjalankan container Nginx, memetakan port, dan memverifikasi bahwa web server berjalan dengan benar menggunakan `curl`.
@@ -8,12 +10,12 @@
 
 **Docker** adalah platform containerization yang memungkinkan kamu mengemas sebuah aplikasi beserta semua dependensinya ke dalam satu unit yang disebut **container**. Container berjalan secara terisolasi namun tetap berbagi kernel dengan host OS.
 
-| Konsep | Deskripsi |
-|--------|-----------|
-| **Image** | Template read-only berisi sistem file dan konfigurasi |
-| **Container** | Instance yang berjalan dari sebuah image |
+| Konsep                 | Deskripsi                                                         |
+| ---------------------- | ----------------------------------------------------------------- |
+| **Image**        | Template read-only berisi sistem file dan konfigurasi             |
+| **Container**    | Instance yang berjalan dari sebuah image                          |
 | **Port Mapping** | Menghubungkan port container ke port host (`-p host:container`) |
-| **Daemon** | Proses background Docker (`dockerd`) |
+| **Daemon**       | Proses background Docker (`dockerd`)                            |
 
 ---
 
@@ -33,6 +35,7 @@ docker pull nginx:latest
 ```
 
 Output yang diharapkan:
+
 ```
 latest: Pulling from library/nginx
 ...
@@ -47,6 +50,7 @@ docker images | grep nginx
 ```
 
 Output:
+
 ```
 REPOSITORY   TAG       IMAGE ID       CREATED        SIZE
 nginx        latest    a72860cb95fd   2 weeks ago    192MB
@@ -67,12 +71,12 @@ docker run -d \
 
 **Penjelasan flag:**
 
-| Flag | Fungsi |
-|------|--------|
-| `-d` | Detached mode — container berjalan di background |
-| `--name my-nginx` | Memberi nama container agar mudah direferensikan |
-| `-p 8080:80` | Memetakan port 8080 di host ke port 80 di container |
-| `nginx:latest` | Image yang digunakan |
+| Flag                | Fungsi                                              |
+| ------------------- | --------------------------------------------------- |
+| `-d`              | Detached mode — container berjalan di background   |
+| `--name my-nginx` | Memberi nama container agar mudah direferensikan    |
+| `-p 8080:80`      | Memetakan port 8080 di host ke port 80 di container |
+| `nginx:latest`    | Image yang digunakan                                |
 
 ### Cek Container Berjalan
 
@@ -81,6 +85,7 @@ docker ps
 ```
 
 Output yang diharapkan:
+
 ```
 CONTAINER ID   IMAGE          COMMAND                  CREATED         STATUS         PORTS                  NAMES
 a1b2c3d4e5f6   nginx:latest   "/docker-entrypoint.…"   5 seconds ago   Up 4 seconds   0.0.0.0:8080->80/tcp   my-nginx
@@ -97,6 +102,7 @@ curl -s http://localhost:8080
 ```
 
 Output yang diharapkan (Nginx default page):
+
 ```html
 <!DOCTYPE html>
 <html>
@@ -112,6 +118,7 @@ curl -I http://localhost:8080
 ```
 
 Output:
+
 ```
 HTTP/1.1 200 OK
 Server: nginx/1.27.0
@@ -128,6 +135,7 @@ curl -o /dev/null -s -w "HTTP Status: %{http_code}\n" http://localhost:8080
 ```
 
 Output:
+
 ```
 HTTP Status: 200
 ```
@@ -155,6 +163,7 @@ docker exec -it my-nginx /bin/bash
 ```
 
 Di dalam container, kamu bisa mengeksplorasi:
+
 ```bash
 # Lihat konfigurasi nginx
 cat /etc/nginx/nginx.conf
@@ -232,13 +241,13 @@ docker rm nginx-1 nginx-2
 
 Pastikan kamu sudah berhasil:
 
-| Tugas | Perintah |
-|-------|----------|
-| Pull image | `docker pull nginx:latest` |
-| Jalankan container | `docker run -d -p 8080:80 nginx:latest` |
-| Cek container running | `docker ps` |
-| Verifikasi HTTP 200 | `curl http://localhost:8080` |
-| Lihat log container | `docker logs my-nginx` |
-| Stop & hapus container | `docker stop && docker rm` |
+| Tugas                  | Perintah                                  |
+| ---------------------- | ----------------------------------------- |
+| Pull image             | `docker pull nginx:latest`              |
+| Jalankan container     | `docker run -d -p 8080:80 nginx:latest` |
+| Cek container running  | `docker ps`                             |
+| Verifikasi HTTP 200    | `curl http://localhost:8080`            |
+| Lihat log container    | `docker logs my-nginx`                  |
+| Stop & hapus container | `docker stop && docker rm`              |
 
 > 💡 **Tips:** Gunakan `docker ps -a` untuk melihat **semua** container termasuk yang sudah berhenti. Gunakan `docker system prune` untuk membersihkan semua resource Docker yang tidak terpakai!

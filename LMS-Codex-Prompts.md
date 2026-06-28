@@ -1,7 +1,11 @@
+![1782618814566](image/LMS-Codex-Prompts/1782618814566.png)![1782618824938](image/LMS-Codex-Prompts/1782618824938.png)![1782618824938](image/LMS-Codex-Prompts/1782618824938.png)![1782622762634](image/LMS-Codex-Prompts/1782622762634.png)
+
 # LMS Platform — OpenAI Codex Prompt Playbook
+
 ## Structured Prompts: Per Micro-App + Sub-Prompts
 
 > **How to use this playbook:**
+>
 > - Run prompts **in order** within each micro-app section.
 > - Complete all sub-prompts of one section before moving to the next.
 > - Each prompt assumes Codex has full read access to the codebase.
@@ -144,6 +148,7 @@ Also update `src/middleware.ts` to add a comment block at the top clearly explai
 ```
 
 ---
+
 ---
 
 ## 📦 MICRO-APP 1 — Login & Student Portal
@@ -165,12 +170,14 @@ Make these changes:
 1. On component mount (`useEffect`), fetch `GET /api/csrf` and store the returned `csrf_token` in a state variable.
 
 2. Update the `handleLogin` function to include the CSRF token in the request headers:
-   ```
+```
+
    headers: {
      'Content-Type': 'application/json',
      'X-CSRF-Token': csrfToken
    }
-   ```
+
+```
 
 3. After a successful login response, read `role` from the response JSON:
    - If `role === 'admin'` → `router.push('/dashboard')`
@@ -287,6 +294,7 @@ Also update the `<Header>` component in `src/components/Header.tsx`:
 ```
 
 ---
+
 ---
 
 ## 📦 MICRO-APP 2 — Interactive Lab Page
@@ -311,10 +319,12 @@ Make these changes:
    ```sql
    SELECT has_access FROM lab_access 
    WHERE username = $1 AND lab_id = $2
-   ```
+```
+
    Where `$1` is `session.username` and `$2` is the `id` param from the URL.
 
 3. If no row is found OR `has_access === false`, render an "Access Denied" screen:
+
    - Dark background matching the existing lab page style.
    - Centered card with:
      - A red lock icon (use an SVG or lucide-react `LockIcon`).
@@ -322,17 +332,16 @@ Make these changes:
      - Body: "You do not have permission to access this lab. Please contact your instructor."
      - A button "← Back to Portal" that navigates to `/`.
    - Do NOT redirect — render the denial UI inline on the same route.
-
 4. If access is granted, render the existing lab layout unchanged.
-
 5. Also fetch the lab content from the `labs` table using `lab_key = id` param, falling back to reading from the filesystem at `/page/lab[id].md` if no database record exists. This ensures backward compatibility with existing markdown files.
+
 ```
 
 ---
 
 ### M2-2 — Terminal Auto-Reconnect & Status Banner
-
 ```
+
 You are working on a Next.js 16 React 19 TypeScript project. The file to modify is `src/components/WebTerminal.tsx`.
 
 This component uses socket.io-client and xterm.js to create an SSH-connected terminal.
@@ -340,12 +349,13 @@ This component uses socket.io-client and xterm.js to create an SSH-connected ter
 Add the following improvements:
 
 1. Auto-reconnect with exponential backoff:
+
    - On socket `disconnect` event, attempt to reconnect.
    - Attempt 1: wait 1 second, Attempt 2: wait 2 seconds, Attempt 3: wait 4 seconds.
    - After 3 failed attempts, stop retrying and show a permanent error state.
    - Track reconnect attempt count in a `useRef`.
-
 2. Connection status banner:
+
    - Add a small status bar above the terminal (inside the component's container div).
    - States:
      - Connecting: grey dot + "Connecting to lab environment..."
@@ -353,24 +363,25 @@ Add the following improvements:
      - Reconnecting: yellow dot + "Reconnecting... (attempt X of 3)"
      - Failed: red dot + "Connection failed. " + a "Retry" button that resets the backoff and tries again.
    - Use `useState` to manage status: `'connecting' | 'connected' | 'reconnecting' | 'failed'`
-
 3. On `ssh-ready` event: set status to `'connected'`.
 4. On `ssh-error` event: set status to `'failed'`, write the error message to the xterm terminal in red.
 5. On socket `disconnect` event: begin the backoff sequence.
 
 Do not change the SSH input/output pipe logic. Only add status tracking and reconnect behavior.
+
 ```
 
 ---
 
 ### M2-3 — Lab Page Navigation & Mobile Layout
-
 ```
+
 You are working on a Next.js 16 React 19 TypeScript project using Tailwind CSS v4.
 
 The file to modify is `src/app/lab/[id]/page.tsx` and `src/components/ResizableSplit.tsx`.
 
 Task 1 — Add navigation to lab page:
+
 - Below the `<Header>` and above the split pane, add a thin breadcrumb/navigation bar:
   `← Back to Portal   |   Lab: [lab title]`
 - "Back to Portal" is a Next.js `<Link href="/">` styled as a subtle text link (no button styling).
@@ -378,12 +389,14 @@ Task 1 — Add navigation to lab page:
 - This bar should be full-width, white background, small text, padding `py-2 px-6`.
 
 Task 2 — Mobile responsive layout in `ResizableSplit.tsx`:
+
 - The current component renders two panels side-by-side with a draggable divider.
 - Add a responsive behavior:
   - On screens `lg` and above (≥1024px): keep the existing side-by-side resizable layout.
   - On screens below `lg`: stack the panels vertically. Markdown panel on top (fixed height 45vh), terminal panel below (fixed height 45vh). Hide the drag divider on mobile.
 - Use a `useMediaQuery` hook or listen to `window.innerWidth` with a resize event listener to detect the breakpoint. Do not use CSS-only approach since the split logic is JavaScript-driven.
 - Do not break the existing desktop resizing behavior.
+
 ```
 
 ---
@@ -397,9 +410,9 @@ Task 2 — Mobile responsive layout in `ResizableSplit.tsx`:
 ---
 
 ### M3-1 — Dashboard Overview Page (Stat Cards + Activity)
-
 ```
-You are working on a Next.js 16 React 19 TypeScript project using Tailwind CSS v4. 
+
+You are working on a Next.js 16 React 19 TypeScript project using Tailwind CSS v4.
 
 The file to modify is `src/app/dashboard/page.tsx`. Currently it renders minimal content.
 
@@ -408,12 +421,13 @@ Replace it with a full overview page. This is a SERVER COMPONENT.
 Requirements:
 
 1. Run these 4 queries in parallel using `Promise.all`:
+
    - Total students: `SELECT COUNT(*) FROM users WHERE role='student' AND is_active=true`
    - Total classes: `SELECT COUNT(*) FROM classes`
    - Total labs: `SELECT COUNT(*) FROM labs`
    - Active lab sessions: `SELECT COUNT(*) FROM lab_sessions`
-
 2. Also query the last 10 lab access changes (you'll need an `updated_at` column on `lab_access` — add it to the query with `COALESCE(updated_at, NOW())`):
+
    ```sql
    SELECT la.username, la.lab_id, la.has_access, u.fullname
    FROM lab_access la
@@ -421,29 +435,30 @@ Requirements:
    ORDER BY la.id DESC
    LIMIT 10
    ```
-
 3. Render a 4-column stat card grid (2 columns on mobile):
    Each card: white background, rounded-xl, shadow-sm, border border-[#E0E6ED].
    Inside: large number in bold (#333), label in muted text (#828282), a colored icon.
+
    - Students card: blue icon (Users SVG)
    - Classes card: purple icon (BookOpen SVG)
    - Labs card: green icon (FlaskConical SVG)
    - Active Sessions card: orange icon (Terminal SVG)
-   Use inline SVGs or lucide-react icons.
-
+     Use inline SVGs or lucide-react icons.
 4. Below the cards: a "Recent Access Activity" section.
-   - Table with columns: Student, Lab ID, Status (Authorized/Restricted), 
+
+   - Table with columns: Student, Lab ID, Status (Authorized/Restricted),
    - Status uses a colored badge: green for authorized, red for restricted.
    - If no activity, show empty state text.
 
 Color palette must match existing dashboard: bg-[#F2F5F8], cards bg-white, primary #2D9CDB, green #27AE60.
+
 ```
 
 ---
 
 ### M3-2 — Dynamic Student Access Management 🔒
-
 ```
+
 You are working on a Next.js 16 TypeScript project.
 
 Task 1 — Update `src/app/dashboard/manage-student/page.tsx`:
@@ -451,6 +466,7 @@ Task 1 — Update `src/app/dashboard/manage-student/page.tsx`:
 The current page only shows access for `lab_id = '1-1'` hardcoded. Replace this with dynamic multi-lab support.
 
 New query (replace the existing query):
+
 ```sql
 SELECT 
   u.username, 
@@ -469,59 +485,68 @@ ORDER BY u.username ASC, l.order_num ASC
 Group the results by student in JavaScript before rendering.
 
 UI Changes:
+
 - Each student card now shows ALL labs (not just lab 1-1), each with its own toggle.
 - Add a search input at the top of the page (client-side filter) that filters student cards by name or username. Make this a `'use client'` wrapper component — keep the data fetching in the parent server component and pass data down as props.
 
 Task 2 — Update the `toggleAccess` server action in the same file:
+
 - After the existing DB upsert, also call `validateCsrfToken` — but since this is a Next.js Server Action (not an API route), read the CSRF token from the `user_session` cookie's parsed `csrf_token` field and validate it matches the `csrf_tokens` table entry for that user.
 - Import `validateCsrfToken` from `@/lib/csrf`.
 - If CSRF validation fails, throw an Error('Unauthorized').
+
 ```
 
 ---
 
 ### M3-3 — Class Management API Routes 🔒
-
 ```
+
 You are working on a Next.js 16 TypeScript project. All routes must be admin-only.
 
 Create the following API route files. Each mutating route must be wrapped with `withCsrf` from `@/lib/withCsrf`. Each route must also verify `session.role === 'admin'` and return 403 if not.
 
 File 1: `src/app/api/classes/route.ts` (this may already exist from M1-2 — add POST to it)
+
 - POST handler: create a new class.
   - Body: `{ name: string, description?: string }`
   - Validate `name` is non-empty.
   - Insert into `classes` table, return the created row with status 201.
 
 File 2: `src/app/api/classes/[id]/route.ts`
+
 - GET handler: return a single class with its labs ordered by `order_num`.
 - PATCH handler: update `name` and/or `description`. Update `updated_at = NOW()`. Return updated row.
 - DELETE handler: delete the class (cascade deletes labs via FK). Return 204.
 
 File 3: `src/app/api/labs/route.ts`
+
 - POST handler: create a new lab.
   - Body: `{ class_id: number, lab_key: string, title: string, content: string, order_num?: number }`
   - Validate `lab_key` is unique — return 409 if duplicate.
   - Insert into `labs` table. Return created row with 201.
 
 File 4: `src/app/api/labs/[id]/route.ts`
+
 - GET handler: return a single lab by id.
 - PATCH handler: update `title`, `content`, `order_num`. Update `updated_at`. Return updated row.
 - DELETE handler: delete the lab. Return 204.
 
 All error responses must follow: `{ message: string }` shape.
+
 ```
 
 ---
 
 ### M3-4 — Class & Lab Management UI Pages
-
 ```
+
 You are working on a Next.js 16 React 19 TypeScript project using Tailwind CSS v4.
 
 Create the following pages inside `src/app/dashboard/classes/`.
 
 Page 1: `src/app/dashboard/classes/page.tsx` (Class List)
+
 - SERVER COMPONENT. Admin-only (check session, redirect if not admin).
 - Fetch all classes with lab count:
   ```sql
@@ -535,6 +560,7 @@ Page 1: `src/app/dashboard/classes/page.tsx` (Class List)
 - "Create New Class" button at top right — clicking it shows an inline form below the button (collapsible, not a modal): input for Name, textarea for Description, Submit button. This form section is a `'use client'` component that posts to `POST /api/classes` with the CSRF token from the page's `<meta name="csrf-token">` tag. On success, refresh the page using `router.refresh()`.
 
 Page 2: `src/app/dashboard/classes/[id]/page.tsx` (Lab List for a Class)
+
 - SERVER COMPONENT.
 - Fetch the class and its labs ordered by `order_num`.
 - Show class name as page heading.
@@ -542,6 +568,7 @@ Page 2: `src/app/dashboard/classes/[id]/page.tsx` (Lab List for a Class)
 - "Add New Lab" button — links to `/dashboard/classes/[id]/labs/new`.
 
 Page 3: `src/app/dashboard/classes/[id]/labs/new/page.tsx` (Lab Creator)
+
 - CLIENT COMPONENT (`'use client'`).
 - Fetch CSRF token on mount from `GET /api/csrf`.
 - Form fields:
@@ -555,18 +582,20 @@ Page 3: `src/app/dashboard/classes/[id]/labs/new/page.tsx` (Lab Creator)
 - On error: show inline error message.
 
 Apply the same dashboard color palette throughout.
+
 ```
 
 ---
 
 ### M3-5 — User Management Page & API 🔒
-
 ```
+
 You are working on a Next.js 16 React 19 TypeScript project.
 
 Task 1 — Create API routes:
 
 File: `src/app/api/users/route.ts`
+
 - GET: return all users (admin only). Exclude `password` field from response. Order by `id ASC`.
   Response: `[{ id, username, fullname, role, is_active }]`
 - POST: create a new user (admin only, CSRF required via withCsrf).
@@ -576,10 +605,12 @@ File: `src/app/api/users/route.ts`
   - If username already exists (unique constraint violation), return 409 with `{ message: 'Username already taken' }`.
 
 File: `src/app/api/users/[id]/route.ts`
+
 - PATCH (CSRF required): update `fullname`, `role`, or `is_active`. If `password` is in the body and non-empty, hash and update it too. Return updated user (no password).
 - Admins cannot deactivate themselves — check `session.id !== id` before allowing `is_active: false`.
 
 Task 2 — Update `src/app/dashboard/users/page.tsx`:
+
 - Keep as SERVER COMPONENT for initial data fetch.
 - Extract the "Create User" form and "Deactivate/Activate" toggle into a separate client component file `src/app/dashboard/users/UserManagementClient.tsx`.
 - The client component receives the user list as props and handles:
@@ -588,13 +619,14 @@ Task 2 — Update `src/app/dashboard/users/page.tsx`:
   - After any action, call `router.refresh()` to re-sync server data.
 - In the table, show a status badge: green "Active" or grey "Inactive" based on `is_active`.
 - Admins cannot deactivate themselves — hide the deactivate button for the row matching the current session's username.
+
 ```
 
 ---
 
 ### M3-6 — Add Sidebar Menu Items for New Pages
-
 ```
+
 You are working on a Next.js 16 TypeScript project.
 
 Modify `src/app/dashboard/layout.tsx`.
@@ -602,16 +634,18 @@ Modify `src/app/dashboard/layout.tsx`.
 Add two new entries to the `menuItems` array:
 
 1. Class Management:
+
    - label: 'Class & Lab Management'
    - href: '/dashboard/classes'
    - icon: an SVG BookOpen icon (24x24, stroke-based, matching the style of existing icons in the file)
-
 2. Insert it BETWEEN the existing "Manage Student" and "User Management" items so the order is:
+
    1. Manage Student
    2. Class & Lab Management  ← new
    3. User Management
 
 Also update the active link highlighting: the current implementation uses static `hover:` classes. Add logic so that the currently active route gets a persistent active style (`bg-[#F2F5F8] text-[#2D9CDB]`) using Next.js `usePathname()` hook. To do this, extract the `<nav>` sidebar content into a `'use client'` component file `src/components/DashboardSidebar.tsx` and use it in `layout.tsx`. Keep `layout.tsx` itself as a server component.
+
 ```
 
 ---
@@ -619,13 +653,14 @@ Also update the active link highlighting: the current implementation uses static
 ## ✅ Verification Checklist (Run After All Prompts)
 
 > Paste this as a final Codex prompt after completing all sub-prompts above.
-
 ```
+
 You are reviewing a Next.js 16 LMS project for correctness and security.
 
 Perform the following checks and report findings for each item. Do NOT auto-fix — only report:
 
 SECURITY CHECKS:
+
 1. Verify every POST/PATCH/DELETE API route either uses `withCsrf` wrapper or is a Next.js Server Action with manual csrf_token validation.
 2. Verify no API route returns a password field (even hashed) in any response.
 3. Verify the `user_session` cookie is set with httpOnly: true, sameSite: 'strict' everywhere it is written.
@@ -640,4 +675,6 @@ FUNCTIONALITY CHECKS:
 10. Verify `src/lib/csrf.ts` exports: `generateCsrfToken`, `storeCsrfToken`, `validateCsrfToken`, `getCsrfFromRequest`.
 
 For each check, respond with: ✅ PASS, ❌ FAIL (with file and line reference), or ⚠️ PARTIAL (with explanation).
+
+```
 ```

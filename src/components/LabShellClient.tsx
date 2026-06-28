@@ -1,9 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
-import MarkdownViewer from '@/components/MarkdownViewer';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import ResizableSplit from '@/components/ResizableSplit';
 import WebTerminal from '@/components/WebTerminal';
 import { useLabStore } from '@/lib/labStore';
@@ -13,10 +12,13 @@ type LabShellClientProps = {
   children: React.ReactNode;
 };
 
+type TerminalStatus = 'idle' | 'connecting' | 'connected' | 'reconnecting' | 'failed';
+
 const SESSION_LIMIT_SECONDS = 15 * 60; // 15 minutes
 
 export default function LabShellClient({ username, children }: LabShellClientProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const labData = useLabStore((state) => state.labData);
   
   const labId = labData?.labId || '';
@@ -26,89 +28,95 @@ export default function LabShellClient({ username, children }: LabShellClientPro
   const prevLabHref = labData?.prevLabHref || null;
   const [connectSignal, setConnectSignal] = useState(0);
   const [disconnectSignal, setDisconnectSignal] = useState(0);
-  const [terminalStatus, setTerminalStatus] = useState<'idle' | 'connecting' | 'connected' | 'reconnecting' | 'failed'>('idle');
-  
-  // "Start" button loading animation state
-  const [isStarting, setIsStarting] = useState(false);
-  const [loadingStep, setLoadingStep] = useState(0);
-  const startTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const stepIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [terminalStatus, setTerminalStatus] = useState<TerminalStatus>('idle');
+  const [connectionElapsedMs, setConnectionElapsedMs] = useState(0);
+  const connectionTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const connectionStartedAtRef = useRef<number | null>(null);
 
   // Session countdown (15 min auto-cut)
   const sessionTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [sessionRemaining, setSessionRemaining] = useState(SESSION_LIMIT_SECONDS);
 
   // Next lab transition animation
-  const [isNavigating, setIsNavigating] = useState(false);
+  const [pendingNavigationHref, setPendingNavigationHref] = useState<string | null>(null);
+  const isNavigating = pendingNavigationHref !== null && pendingNavigationHref !== pathname;
 
   const isRunning = terminalStatus === 'connected' || terminalStatus === 'connecting' || terminalStatus === 'reconnecting';
 
   // Cleanup timers on unmount
   useEffect(() => {
     return () => {
-      if (startTimerRef.current) clearTimeout(startTimerRef.current);
-      if (stepIntervalRef.current) clearInterval(stepIntervalRef.current);
+      if (connectionTimerRef.current) clearInterval(connectionTimerRef.current);
       if (sessionTimerRef.current) clearInterval(sessionTimerRef.current);
     };
   }, []);
 
-  // Start session countdown when connected
-  useEffect(() => {
-    if (terminalStatus === 'connected') {
+  const handleTerminalStatusChange = useCallback((status: TerminalStatus) => {
+    setTerminalStatus(status);
+
+    if (status === 'connecting' || status === 'reconnecting') {
+      connectionStartedAtRef.current = Date.now();
+      setConnectionElapsedMs(0);
+      if (connectionTimerRef.current) {
+        clearInterval(connectionTimerRef.current);
+      }
+      connectionTimerRef.current = setInterval(() => {
+        if (connectionStartedAtRef.current !== null) {
+          setConnectionElapsedMs(Date.now() - connectionStartedAtRef.current);
+        }
+      }, 100);
+      return;
+    }
+
+    connectionStartedAtRef.current = null;
+    setConnectionElapsedMs(0);
+    if (connectionTimerRef.current) {
+      clearInterval(connectionTimerRef.current);
+      connectionTimerRef.current = null;
+    }
+
+    if (status === 'connected') {
       setSessionRemaining(SESSION_LIMIT_SECONDS);
+      if (sessionTimerRef.current) {
+        clearInterval(sessionTimerRef.current);
+      }
       sessionTimerRef.current = setInterval(() => {
         setSessionRemaining((prev) => {
           if (prev <= 1) {
-            // Auto-disconnect
             setDisconnectSignal((v) => v + 1);
-            if (sessionTimerRef.current) clearInterval(sessionTimerRef.current);
+            if (sessionTimerRef.current) {
+              clearInterval(sessionTimerRef.current);
+              sessionTimerRef.current = null;
+            }
             return 0;
           }
           return prev - 1;
         });
       }, 1000);
-    } else {
-      if (sessionTimerRef.current) {
-        clearInterval(sessionTimerRef.current);
-        sessionTimerRef.current = null;
-      }
+      return;
     }
-    return () => {
-      if (sessionTimerRef.current) clearInterval(sessionTimerRef.current);
-    };
-  }, [terminalStatus]);
+
+    if (sessionTimerRef.current) {
+      clearInterval(sessionTimerRef.current);
+      sessionTimerRef.current = null;
+    }
+    setSessionRemaining(SESSION_LIMIT_SECONDS);
+  }, []);
 
   const handleStartStop = () => {
     if (isRunning) {
       setDisconnectSignal((v) => v + 1);
       return;
     }
-    if (isStarting) return;
-
-    // 15 seconds loading animation then connect
-    setIsStarting(true);
-    setLoadingStep(0);
-
-    // Increment loading steps
-    let currentStep = 0;
-    stepIntervalRef.current = setInterval(() => {
-      currentStep += 1;
-      setLoadingStep(currentStep);
-    }, 2800);
-
-    startTimerRef.current = setTimeout(() => {
-      if (stepIntervalRef.current) clearInterval(stepIntervalRef.current);
-      setIsStarting(false);
-      setConnectSignal((v) => v + 1);
-    }, 15000); // 15 seconds delay
+    
+    // Connect immediately
+    setConnectSignal((v) => v + 1);
   };
 
   const handleNextLab = () => {
     if (!nextLabHref) return;
-    setIsNavigating(true);
-    setTimeout(() => {
-      router.push(nextLabHref);
-    }, 400);
+    setPendingNavigationHref(nextLabHref);
+    router.push(nextLabHref);
   };
 
   // Format session remaining
@@ -116,16 +124,7 @@ export default function LabShellClient({ username, children }: LabShellClientPro
   const sSec = String(sessionRemaining % 60).padStart(2, '0');
   const sessionWarning = sessionRemaining <= 120 && terminalStatus === 'connected';
 
-  // Loading steps text
-  const loadingStepsText = [
-    'Provisioning dynamic virtual environment...',
-    'Initializing Docker daemon & sandbox resources...',
-    'Configuring secure container networking interfaces...',
-    'Deploying SSH proxy gateways...',
-    'Establishing connection handshake and final checks...',
-    'Almost ready, final configuration...'
-  ];
-  const activeStepText = loadingStepsText[loadingStep] || loadingStepsText[loadingStepsText.length - 1];
+  const connectionElapsedText = `${(connectionElapsedMs / 1000).toFixed(connectionElapsedMs < 1000 ? 1 : 0)}s`;
 
   return (
     <>
@@ -142,35 +141,35 @@ export default function LabShellClient({ username, children }: LabShellClientPro
         </div>
       )}
 
-      {/* Start-lab loading overlay */}
-      {isStarting && (
+      {/* Start-lab loading overlay - Tied to real connection status */}
+      {(terminalStatus === 'connecting' || terminalStatus === 'reconnecting') && (
         <div
           className="fixed inset-0 z-[998] flex items-center justify-center animate-fade-in"
           style={{ background: 'rgba(30,29,46,0.88)', backdropFilter: 'blur(5px)' }}
         >
-          <div className="flex flex-col items-center gap-6 rounded-2xl border border-[#c8dfc9]/25 p-12 max-w-md w-full mx-4 text-center"
-            style={{ background: 'rgba(26,26,36,0.96)', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
-            {/* Pulsing ring animation */}
+          <div
+            className="mx-4 flex w-full max-w-md flex-col items-center gap-6 rounded-2xl border border-[#c8dfc9]/25 p-12 text-center"
+            style={{ background: 'rgba(26,26,36,0.96)', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}
+          >
             <div className="relative flex h-20 w-20 items-center justify-center">
               <div className="absolute inset-0 animate-ping rounded-full border-2 border-[#6EADBC] opacity-35" />
               <div className="absolute inset-2 animate-ping rounded-full border-2 border-[#9FCBAD] opacity-25" style={{ animationDelay: '0.2s' }} />
               <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#1a1a24] border-t-[#6EADBC]" />
             </div>
-            <div className="space-y-3">
-              <div className="font-mono text-sm font-semibold text-[#F1F7D4] uppercase tracking-wider">
+            <div className="w-full space-y-3">
+              <div className="font-mono text-sm font-semibold uppercase tracking-wider text-[#F1F7D4]">
                 Setting Up Lab Environment
               </div>
-              
-              {/* Fake progress bar */}
-              <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden border border-[#F1F7D4]/10">
-                <div 
-                  className="h-full bg-[#6EADBC] transition-all duration-300 ease-out rounded-full"
-                  style={{ width: `${Math.min(((loadingStep + 1) / loadingStepsText.length) * 100, 100)}%` }}
+
+              <div className="h-1.5 w-full overflow-hidden rounded-full border border-[#F1F7D4]/10 bg-black/40">
+                <div
+                  className="h-full w-full animate-pulse rounded-full bg-gradient-to-r from-transparent via-[#6EADBC] to-transparent opacity-80"
+                  style={{ animationDuration: '1.1s' }}
                 />
               </div>
 
-              <div className="font-mono text-xs text-[#F1F7D4]/65 animate-pulse min-h-[32px] flex items-center justify-center px-4">
-                {activeStepText}
+              <div className="flex min-h-[32px] items-center justify-center px-4 font-mono text-xs text-[#F1F7D4]/70">
+                SSH handshake in progress · {connectionElapsedText}
               </div>
             </div>
           </div>
@@ -206,7 +205,7 @@ export default function LabShellClient({ username, children }: LabShellClientPro
             {prevLabHref ? (
               <button
                 type="button"
-                onClick={() => { setIsNavigating(true); setTimeout(() => router.push(prevLabHref!), 400); }}
+                onClick={() => { setPendingNavigationHref(prevLabHref); router.push(prevLabHref); }}
                 className="inline-flex items-center justify-center min-h-7 rounded px-3 py-1 text-xs font-bold transition-all"
                 style={{ background: 'rgba(241,247,212,0.10)', color: 'rgba(241,247,212,0.75)', border: '1px solid rgba(241,247,212,0.20)' }}
                 onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(241,247,212,0.20)'; }}
@@ -237,17 +236,15 @@ export default function LabShellClient({ username, children }: LabShellClientPro
             <button
               type="button"
               onClick={handleStartStop}
-              disabled={isStarting}
+              disabled={terminalStatus === 'connecting' || terminalStatus === 'reconnecting'}
               className="min-h-7 rounded px-4 py-1 text-xs font-bold transition-all disabled:opacity-70"
               style={
                 isRunning
                   ? { background: '#b04040', color: '#fff' }
-                  : isStarting
-                    ? { background: 'rgba(110,173,188,0.60)', color: '#1e1d2e' }
-                    : { background: '#6EADBC', color: '#1e1d2e' }
+                  : { background: '#6EADBC', color: '#1e1d2e' }
               }
             >
-              {isStarting ? 'Starting...' : isRunning ? 'Stop' : 'Start'}
+              {(terminalStatus === 'connecting' || terminalStatus === 'reconnecting') ? 'Starting...' : isRunning ? 'Stop' : 'Start'}
             </button>
 
             {nextLabHref ? (
@@ -299,7 +296,7 @@ export default function LabShellClient({ username, children }: LabShellClientPro
                   username={username}
                   connectSignal={connectSignal}
                   disconnectSignal={disconnectSignal}
-                  onStatusChange={setTerminalStatus}
+                  onStatusChange={handleTerminalStatusChange}
                   allowlist={allowlist}
                 />
               </div>
