@@ -13,11 +13,16 @@ type LabShellClientProps = {
   markdownContent: string;
   username: string;
   nextLabHref: string | null;
+  allowlist?: {
+    commands: string[];
+    subcommands: string[];
+    description?: string;
+  };
 };
 
 const SESSION_LIMIT_SECONDS = 15 * 60; // 15 minutes
 
-export default function LabShellClient({ labId, labTitle, markdownContent, username, nextLabHref }: LabShellClientProps) {
+export default function LabShellClient({ labId, labTitle, markdownContent, username, nextLabHref, allowlist }: LabShellClientProps) {
   const router = useRouter();
   const [connectSignal, setConnectSignal] = useState(0);
   const [disconnectSignal, setDisconnectSignal] = useState(0);
@@ -281,6 +286,7 @@ export default function LabShellClient({ labId, labTitle, markdownContent, usern
                   connectSignal={connectSignal}
                   disconnectSignal={disconnectSignal}
                   onStatusChange={setTerminalStatus}
+                  allowlist={allowlist}
                 />
               </div>
             }

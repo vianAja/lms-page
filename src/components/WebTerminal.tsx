@@ -12,10 +12,51 @@ interface WebTerminalProps {
   connectSignal?: number;
   disconnectSignal?: number;
   onStatusChange?: (status: 'idle' | 'connecting' | 'connected' | 'reconnecting' | 'failed') => void;
+  /** Allowlist config for this specific lab — derived from lab-allowlist.js */
+  allowlist?: {
+    commands: string[];
+    subcommands: string[];
+  };
 }
 
 const MAX_RECONNECT_ATTEMPTS = 3;
 const RECONNECT_DELAYS_MS = [1000, 2000, 4000];
+
+// Universal commands allowed in every lab
+const UNIVERSAL_COMMANDS = [
+  'ls', 'pwd', 'cd', 'echo', 'cat', 'less', 'head', 'tail', 'grep',
+  'find', 'mkdir', 'touch', 'rm', 'rmdir', 'mv', 'cp', 'stat', 'exit',
+  'clear', 'help', 'man', 'history', 'which', 'whoami', 'id', 'date',
+  'uname', 'env', 'export', 'alias',
+];
+
+function checkAllowed(
+  input: string,
+  labId: string,
+  allowlist?: { commands: string[]; subcommands: string[] }
+): { allowed: boolean; reason: string } {
+  const trimmed = input.trim();
+  if (!trimmed || trimmed.startsWith('#')) return { allowed: true, reason: 'empty/comment' };
+
+  const baseCmd = trimmed.split(/\s+/)[0];
+
+  // Universal commands always OK
+  if (UNIVERSAL_COMMANDS.includes(baseCmd)) return { allowed: true, reason: 'universal' };
+
+  // No allowlist configured → permissive
+  if (!allowlist) return { allowed: true, reason: 'no-rules' };
+
+  // Check subcommands (longest prefix first)
+  const sortedSubs = [...allowlist.subcommands].sort((a, b) => b.length - a.length);
+  for (const sub of sortedSubs) {
+    if (trimmed.startsWith(sub)) return { allowed: true, reason: `sub:${sub}` };
+  }
+
+  // Check base command
+  if (allowlist.commands.includes(baseCmd)) return { allowed: true, reason: `cmd:${baseCmd}` };
+
+  return { allowed: false, reason: `'${baseCmd}' is not part of lab '${labId}'` };
+}
 
 export default function WebTerminal({
   labId,
@@ -23,6 +64,7 @@ export default function WebTerminal({
   connectSignal = 0,
   disconnectSignal = 0,
   onStatusChange,
+  allowlist,
 }: WebTerminalProps) {
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<Terminal | null>(null);
@@ -159,8 +201,51 @@ export default function WebTerminal({
 
     connectSocketRef.current = connectSocket;
 
+    // Command buffer — tracks what the user has typed on the current line
+    let commandBuffer = '';
+
     term.onData((data) => {
-      socketRef.current?.emit('ssh-input', data);
+      const socket = socketRef.current;
+
+      // Handle Backspace (^H or DEL) — maintain buffer
+      if (data === '\x7f' || data === '\b') {
+        commandBuffer = commandBuffer.slice(0, -1);
+        socket?.emit('ssh-input', data);
+        return;
+      }
+
+      // Handle Enter (\r or \n) — evaluate the buffered line
+      if (data === '\r' || data === '\n') {
+        const line = commandBuffer.trim();
+        commandBuffer = '';
+
+        if (line) {
+          const check = checkAllowed(line, labId, allowlist);
+          if (!check.allowed) {
+            // Block the command — do NOT send to SSH
+            term.write(
+              `\r\n\x1b[1;33m⚠ Command blocked:\x1b[0m \x1b[31m${check.reason}\x1b[0m\r\n` +
+              `\x1b[90m  This command is not part of the current lab exercises.\x1b[0m\r\n` +
+              `\x1b[90m  Only commands listed in the lab guide are permitted.\x1b[0m\r\n`
+            );
+            // Move to new prompt line visually by sending Enter through
+            socket?.emit('ssh-input', '\x03'); // Ctrl+C to cancel any partial input
+            socket?.emit('ssh-input', data);   // Enter to get new prompt
+            return;
+          }
+        }
+
+        // Allowed — pass through normally
+        socket?.emit('ssh-input', data);
+        return;
+      }
+
+      // Printable characters — append to buffer and pass through
+      if (data >= ' ' || data === '\t') {
+        commandBuffer += data;
+      }
+
+      socket?.emit('ssh-input', data);
     });
 
     const handleResize = () => fitAddon.fit();
