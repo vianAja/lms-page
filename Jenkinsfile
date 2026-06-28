@@ -7,6 +7,16 @@ pipeline {
                 checkout scm
             }
         }
+
+        stage('Clean Up') {
+            steps {
+                // Hapus paksa container dengan nama yang bentrok
+                sh 'docker rm -f lms-db lms-app || true'
+                
+                // Hapus docker-compose lama beserta volume-nya secara bersih
+                sh 'docker compose down -v || true'
+            }
+        }
         
         stage('Setup Environment') {
             steps {
