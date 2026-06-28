@@ -6,23 +6,24 @@ import { useRouter } from 'next/navigation';
 import MarkdownViewer from '@/components/MarkdownViewer';
 import ResizableSplit from '@/components/ResizableSplit';
 import WebTerminal from '@/components/WebTerminal';
+import { useLabStore } from '@/lib/labStore';
 
 type LabShellClientProps = {
-  labId: string;
-  labTitle: string;
-  markdownContent: string;
   username: string;
-  nextLabHref: string | null;
-  prevLabHref: string | null;
-  allowlist?: {
-    exactCommands: string[];
-  };
+  children: React.ReactNode;
 };
 
 const SESSION_LIMIT_SECONDS = 15 * 60; // 15 minutes
 
-export default function LabShellClient({ labId, labTitle, markdownContent, username, nextLabHref, prevLabHref, allowlist }: LabShellClientProps) {
+export default function LabShellClient({ username, children }: LabShellClientProps) {
   const router = useRouter();
+  const labData = useLabStore((state) => state.labData);
+  
+  const labId = labData?.labId || '';
+  const labTitle = labData?.labTitle || '';
+  const allowlist = labData?.allowlist;
+  const nextLabHref = labData?.nextLabHref || null;
+  const prevLabHref = labData?.prevLabHref || null;
   const [connectSignal, setConnectSignal] = useState(0);
   const [disconnectSignal, setDisconnectSignal] = useState(0);
   const [terminalStatus, setTerminalStatus] = useState<'idle' | 'connecting' | 'connected' | 'reconnecting' | 'failed'>('idle');
@@ -287,7 +288,7 @@ export default function LabShellClient({ labId, labTitle, markdownContent, usern
                     {labTitle}
                   </h1>
                   <div className="mb-8 h-px" style={{ background: '#c8dfc9' }} />
-                  <MarkdownViewer content={markdownContent} />
+                  {children}
                 </div>
               </div>
             }

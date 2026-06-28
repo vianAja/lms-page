@@ -5,7 +5,8 @@ import { db } from '@/lib/db';
 import { requireSession } from '@/lib/session';
 import { StudentFrame } from '@/components/AppFrame';
 import { EmptyState } from '@/components/vn-ui';
-import LabShellClient from '@/components/LabShellClient';
+import MarkdownViewer from '@/components/MarkdownViewer';
+import LabStateUpdater from '@/components/LabStateUpdater';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { LAB_ALLOWLIST } = require('@/lib/lab-allowlist') as {
   LAB_ALLOWLIST: Record<string, { exactCommands: string[] }>;
@@ -103,16 +104,16 @@ export default async function LabPage({ params }: { params: Promise<{ id: string
   }
 
   return (
-    <div className="h-dvh overflow-hidden bg-[#F1F7D4] text-[#1e1d2e]">
-      <LabShellClient
-        labId={labKey}
-        labTitle={labTitle}
-        markdownContent={markdownContent}
-        username={session.username || ''}
-        nextLabHref={nextLabHref}
-        prevLabHref={prevLabHref}
-        allowlist={LAB_ALLOWLIST[labKey] ?? undefined}
-      />
-    </div>
+    <>
+      <LabStateUpdater 
+        data={{
+          labId: labKey,
+          labTitle,
+          allowlist: LAB_ALLOWLIST[labKey] ?? undefined,
+          nextLabHref,
+          prevLabHref
+        }} 
+      <MarkdownViewer content={markdownContent} />
+    </>
   );
 }

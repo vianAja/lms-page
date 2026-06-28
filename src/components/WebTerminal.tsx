@@ -81,6 +81,15 @@ export default function WebTerminal({
   const [attempt, setAttempt] = useState(0);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
+  // Keep refs for dynamic values so they can be read in closures without triggering reconnections
+  const currentLabId = useRef(labId);
+  const currentAllowlist = useRef(allowlist);
+
+  useEffect(() => {
+    currentLabId.current = labId;
+    currentAllowlist.current = allowlist;
+  }, [labId, allowlist]);
+
   useEffect(() => {
     statusRef.current = status;
     onStatusChange?.(status);
@@ -160,7 +169,7 @@ export default function WebTerminal({
         reconnectAttemptRef.current = 0;
         setAttempt(0);
         setStatus('connecting');
-        socket.emit('init-ssh', { labId, appUser: username });
+        socket.emit('init-ssh', { labId: currentLabId.current, appUser: username });
       });
 
       socket.on('ssh-ready', () => {
@@ -238,7 +247,7 @@ export default function WebTerminal({
         commandBuffer = '';
 
         if (line) {
-          const check = checkAllowed(line, labId, allowlist);
+          const check = checkAllowed(line, currentLabId.current, currentAllowlist.current);
           if (!check.allowed) {
             // Block the command — do NOT send to SSH, do NOT send Ctrl+C
             // Just write the warning and a blank new line client-side
@@ -277,7 +286,7 @@ export default function WebTerminal({
       connectSocketRef.current = null;
       term.dispose();
     };
-  }, [labId, username]);
+  }, [username]); // Only remount if username changes! Removed labId to persist across labs.
 
   const handleConnectVm = () => {
     if (status === 'connected' || status === 'connecting' || status === 'reconnecting') return;
