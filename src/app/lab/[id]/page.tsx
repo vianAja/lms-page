@@ -111,6 +111,7 @@ export default async function LabPage({ params }: { params: Promise<{ id: string
           labTitle,
           allowlist: LAB_ALLOWLIST[labKey] ?? undefined,
           nextLabHref,
+          prevLabHref,
         }} 
       />
       <MarkdownViewer content={markdownContent} />
