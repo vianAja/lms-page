@@ -31,8 +31,18 @@ pipeline {
             steps {
                 // Build images dan restart containers (LMS App + PostgreSQL)
                 sh 'docker compose build'
-                sh 'docker compose down'
+                sh 'docker compose up -d db'
+                
+                // Tunggu sebentar agar PostgreSQL siap menerima koneksi
+                sh 'sleep 5'
+                
+                // Jalankan container aplikasi
                 sh 'docker compose up -d'
+                
+                // Eksekusi migrasi dan seed database di dalam container lms-app
+                // Penting untuk server baru agar tabel dan admin user otomatis dibuat
+                sh 'docker exec lms-app node src/lib/migrate.js || true'
+                sh 'docker exec lms-app node src/lib/seed-v2.js || true'
             }
         }
     }
