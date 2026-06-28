@@ -9,9 +9,12 @@ export async function GET(request: Request) {
   
   const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
   const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-  const reqUrl = new URL(request.url);
-  const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || `${process.env.APP_URL || reqUrl.origin}/api/auth/callback/google`;
-  const baseUrl = process.env.APP_URL || reqUrl.origin;
+  const host = request.headers.get('x-forwarded-host') || request.headers.get('host');
+  const proto = request.headers.get('x-forwarded-proto') || (host?.includes('localhost') ? 'http' : 'https');
+  const origin = host ? `${proto}://${host}` : new URL(request.url).origin;
+
+  const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || `${process.env.APP_URL || origin}/api/auth/callback/google`;
+  const baseUrl = process.env.APP_URL || origin;
 
   if (!code) {
     return NextResponse.redirect(new URL('/login?error=NoCode', baseUrl));
