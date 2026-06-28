@@ -65,8 +65,24 @@ async function migrate() {
     `);
 
     console.log('Step 4b/5: Patching lab_access to use lab_key column (if not exists)...');
+    // Run outside transaction block since CREATE CONSTRAINT requires careful handling
+    await client.query('COMMIT');
+    await client.query('BEGIN');
+
     await client.query(`ALTER TABLE lab_access ADD COLUMN IF NOT EXISTS lab_key VARCHAR(255)`);
     await client.query(`UPDATE lab_access SET lab_key = lab_id WHERE lab_key IS NULL`);
+
+    // Add unique constraint on (username, lab_key) if not already exists
+    await client.query(`
+      DO $$ BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint
+          WHERE conname = 'lab_access_username_lab_key_key'
+        ) THEN
+          ALTER TABLE lab_access ADD CONSTRAINT lab_access_username_lab_key_key UNIQUE (username, lab_key);
+        END IF;
+      END $$;
+    `);
 
     console.log('Step 5/6: Creating csrf_tokens table (if not exists)...');
     await client.query(`

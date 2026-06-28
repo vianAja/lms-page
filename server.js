@@ -57,6 +57,7 @@ app.prepare().then(() => {
     socket.on('init-ssh', async ({ labId, appUser }) => {
       try {
         const candidates = buildLabIdCandidates(labId);
+        console.log(`[SSH] init-ssh requested: labId=${labId} appUser=${appUser} candidates=${JSON.stringify(candidates)}`);
 
         const result = await db.query(
           'SELECT * FROM lab_sessions WHERE lab_id = ANY($1) AND app_user = $2 LIMIT 1',
@@ -65,16 +66,20 @@ app.prepare().then(() => {
         const lab = result.rows[0];
 
         if (!lab) {
+          console.warn(`[SSH] No session found in DB for labId=${labId} appUser=${appUser}`);
           socket.emit('ssh-error', `Lab session not found for ${labId}`);
           return;
         }
+
+        console.log(`[SSH] Session found: lab_id=${lab.lab_id} ssh_host=${lab.ssh_host} ssh_user=${lab.ssh_user} ssh_port=${lab.ssh_port}`);
 
         let sshPass = lab.ssh_pass;
         try {
           const { decrypt } = require('./src/lib/crypto');
           sshPass = decrypt(lab.ssh_pass);
+          console.log('[SSH] Password decrypted successfully.');
         } catch (e) {
-          console.error('Error decrypting ssh_pass, using fallback/raw value', e);
+          console.error('[SSH] Error decrypting ssh_pass, using raw value:', e.message);
         }
 
       sshClient = new Client();
@@ -101,6 +106,7 @@ app.prepare().then(() => {
           });
         })
         .on('error', (err) => {
+          console.error(`[SSH] Connection error for ${lab.ssh_user}@${lab.ssh_host}: ${err.message}`);
           socket.emit('ssh-error', err.message);
         })
         .connect({
@@ -109,8 +115,9 @@ app.prepare().then(() => {
           username: lab.ssh_user,
           password: sshPass,
         });
+        console.log(`[SSH] Connecting to ${lab.ssh_user}@${lab.ssh_host}:${lab.ssh_port}...`);
       } catch (error) {
-        console.error('Error connecting to ssh or db:', error);
+        console.error('[SSH] Unexpected error in init-ssh handler:', error);
         socket.emit('ssh-error', 'Internal server error');
       }
     });
