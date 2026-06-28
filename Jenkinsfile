@@ -39,8 +39,11 @@ pipeline {
                 // Jalankan container aplikasi
                 sh 'docker compose up -d'
                 
-                // Eksekusi migrasi dan seed database di dalam container lms-app
-                // Penting untuk server baru agar tabel dan admin user otomatis dibuat
+                // Eksekusi inisialisasi database dengan urutan yang benar:
+                // 1. seed.js    → Buat tabel dasar (users, lab_sessions, lab_access) + data admin
+                // 2. migrate.js → Tambah kolom baru ke tabel yang sudah ada (ALTER TABLE)
+                // 3. seed-v2.js → Seed data labs, classes, enrollments
+                sh 'docker exec lms-app node src/lib/seed.js || true'
                 sh 'docker exec lms-app node src/lib/migrate.js || true'
                 sh 'docker exec lms-app node src/lib/seed-v2.js || true'
             }
