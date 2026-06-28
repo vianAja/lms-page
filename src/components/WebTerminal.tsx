@@ -210,9 +210,24 @@ export default function WebTerminal({
     term.onData((data) => {
       const socket = socketRef.current;
 
+      // Arrow keys & special sequences (ESC sequences like \x1b[A, \x1b[B, etc.)
+      // Pass through directly AND reset our client-side buffer (the shell manages history)
+      if (data.startsWith('\x1b')) {
+        commandBuffer = '';
+        socket?.emit('ssh-input', data);
+        return;
+      }
+
       // Handle Backspace (^H or DEL) — maintain buffer
       if (data === '\x7f' || data === '\b') {
         commandBuffer = commandBuffer.slice(0, -1);
+        socket?.emit('ssh-input', data);
+        return;
+      }
+
+      // Handle Ctrl+C (\x03) — pass through and reset buffer
+      if (data === '\x03') {
+        commandBuffer = '';
         socket?.emit('ssh-input', data);
         return;
       }
@@ -225,15 +240,15 @@ export default function WebTerminal({
         if (line) {
           const check = checkAllowed(line, labId, allowlist);
           if (!check.allowed) {
-            // Block the command — do NOT send to SSH
+            // Block the command — do NOT send to SSH, do NOT send Ctrl+C
+            // Just write the warning and a blank new line client-side
             term.write(
-              `\r\n\x1b[1;33m⚠ Command blocked:\x1b[0m \x1b[31m${check.reason}\x1b[0m\r\n` +
-              `\x1b[90m  This command is not part of the current lab exercises.\x1b[0m\r\n` +
-              `\x1b[90m  Only commands listed in the lab guide are permitted.\x1b[0m\r\n`
+              `\r\n\x1b[1;33m⚠ Command blocked:\x1b[0m Use the command as specified in the Content Lab\r\n`
             );
-            // Move to new prompt line visually by sending Enter through
-            socket?.emit('ssh-input', '\x03'); // Ctrl+C to cancel any partial input
-            socket?.emit('ssh-input', data);   // Enter to get new prompt
+            // Send Ctrl+U (clear line) + Enter to get a clean prompt from shell
+            // without echoing ^C
+            socket?.emit('ssh-input', '\x15'); // Ctrl+U clears line silently
+            socket?.emit('ssh-input', data);   // Enter for new prompt
             return;
           }
         }
