@@ -14,48 +14,51 @@ interface WebTerminalProps {
   onStatusChange?: (status: 'idle' | 'connecting' | 'connected' | 'reconnecting' | 'failed') => void;
   /** Allowlist config for this specific lab — derived from lab-allowlist.js */
   allowlist?: {
-    commands: string[];
-    subcommands: string[];
+    exactCommands: string[];
   };
 }
 
 const MAX_RECONNECT_ATTEMPTS = 3;
 const RECONNECT_DELAYS_MS = [1000, 2000, 4000];
 
-// Universal commands allowed in every lab
-const UNIVERSAL_COMMANDS = [
-  'ls', 'pwd', 'cd', 'echo', 'cat', 'less', 'head', 'tail', 'grep',
-  'find', 'mkdir', 'touch', 'rm', 'rmdir', 'mv', 'cp', 'stat', 'exit',
-  'clear', 'help', 'man', 'history', 'which', 'whoami', 'id', 'date',
-  'uname', 'env', 'export', 'alias',
-];
+// Universal commands allowed in every lab without exact matching
+const UNIVERSAL_COMMANDS = ['clear', 'exit', 'ls', 'pwd', 'cd'];
 
 function checkAllowed(
   input: string,
   labId: string,
-  allowlist?: { commands: string[]; subcommands: string[] }
+  allowlist?: { exactCommands: string[] }
 ): { allowed: boolean; reason: string } {
   const trimmed = input.trim();
-  if (!trimmed || trimmed.startsWith('#')) return { allowed: true, reason: 'empty/comment' };
+  if (!trimmed) return { allowed: true, reason: 'empty' };
+  if (trimmed.startsWith('#')) return { allowed: true, reason: 'comment' };
 
-  const baseCmd = trimmed.split(/\s+/)[0];
-
-  // Universal commands always OK
-  if (UNIVERSAL_COMMANDS.includes(baseCmd)) return { allowed: true, reason: 'universal' };
-
-  // No allowlist configured → permissive
-  if (!allowlist) return { allowed: true, reason: 'no-rules' };
-
-  // Check subcommands (longest prefix first)
-  const sortedSubs = [...allowlist.subcommands].sort((a, b) => b.length - a.length);
-  for (const sub of sortedSubs) {
-    if (trimmed.startsWith(sub)) return { allowed: true, reason: `sub:${sub}` };
+  // Allow safe basic navigation
+  const baseCmd = trimmed.split(/\\s+/)[0];
+  if (UNIVERSAL_COMMANDS.includes(baseCmd) && !/[;&|$\\`<>]/.test(trimmed)) {
+    return { allowed: true, reason: 'universal-safe' };
   }
 
-  // Check base command
-  if (allowlist.commands.includes(baseCmd)) return { allowed: true, reason: `cmd:${baseCmd}` };
+  // No allowlist configured → permissive fallback
+  if (!allowlist || !allowlist.exactCommands) return { allowed: true, reason: 'no-rules' };
 
-  return { allowed: false, reason: `'${baseCmd}' is not part of lab '${labId}'` };
+  // Exact Match Validation
+  const normalizedInput = trimmed.replace(/\\s+/g, ' ');
+  for (const cmd of allowlist.exactCommands) {
+    if (cmd.replace(/\\s+/g, ' ') === normalizedInput) {
+      return { allowed: true, reason: 'exact-match' };
+    }
+  }
+
+  // Exception for cd commands since paths can vary slightly
+  if (trimmed.startsWith('cd ') && !/[;&|$\\`<>]/.test(trimmed)) {
+      return { allowed: true, reason: 'safe-cd' };
+  }
+
+  return { 
+    allowed: false, 
+    reason: `Command '${trimmed}' is not listed in the lab instructions. Strict exact match required.` 
+  };
 }
 
 export default function WebTerminal({

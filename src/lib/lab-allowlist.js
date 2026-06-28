@@ -2,340 +2,355 @@
  * lab-allowlist.js
  * ==================
  * Defines the exact shell commands that are ALLOWED to be run in each lab.
- * The allowlist is enforced client-side (instant UX feedback) via WebTerminal,
- * and also on the server-side via the Socket.IO "init-ssh" / "ssh-input" flow.
- *
- * Rules:
- *  - Each entry is the BASE command (first word before any spaces/flags).
- *  - Sub-commands (like `docker run`, `docker-compose up`) are listed separately
- *    under "subcommands" — the full prefix is checked.
- *  - The allowlist is intentionally STRICT. Add commands only if they appear
- *    in the corresponding lab's markdown (.md) file.
- *  - Universal shell utilities (cd, ls, pwd, echo, cat, etc.) are allowed on ALL labs.
+ * The allowlist is strictly enforced client-side to prevent arbitrary command execution.
  */
 
-/** Commands permitted in every lab regardless of topic */
-const UNIVERSAL_COMMANDS = [
-  'ls',
-  'pwd',
-  'cd',
-  'echo',
-  'cat',
-  'less',
-  'head',
-  'tail',
-  'grep',
-  'find',
-  'mkdir',
-  'touch',
-  'rm',
-  'rmdir',
-  'mv',
-  'cp',
-  'stat',
-  'exit',
-  'clear',
-  'help',
-  'man',
-  'history',
-  'which',
-  'whoami',
-  'id',
-  'date',
-  'uname',
-  'env',
-  'export',
-  'alias',
-];
+const UNIVERSAL_COMMANDS = ['clear', 'exit', 'ls', 'pwd', 'cd'];
 
-/**
- * Per-lab command allowlist.
- *
- * Structure per lab:
- * {
- *   commands: string[]      — base commands allowed (e.g. 'docker', 'curl')
- *   subcommands: string[]   — full prefixes that must match (e.g. 'docker run', 'docker-compose up')
- *   description: string     — human-readable summary of what this lab covers
- * }
- *
- * Matching logic:
- *   1. Extract the trimmed input line.
- *   2. Check if it starts with any UNIVERSAL_COMMANDS.
- *   3. Check if it starts with any allowed `subcommands` prefix (most specific first).
- *   4. Check if the base command (first word) is in `commands`.
- *   5. If none match → BLOCK.
- */
 const LAB_ALLOWLIST = {
-  /* ------------------------------------------------------------------ */
-  /* DOCKER LABS                                                          */
-  /* ------------------------------------------------------------------ */
-
-  'docker-1': {
-    description: 'Menjalankan Container nginx:latest',
-    commands: [
-      'docker',
-      'curl',
-    ],
-    subcommands: [
-      // Informational
-      'docker --version',
-      'docker info',
-      'docker images',
-      'docker ps',
-      // Image management
-      'docker pull nginx',
-      'docker rmi nginx',
-      // Container lifecycle
-      'docker run',
-      'docker stop',
-      'docker start',
-      'docker restart',
-      'docker rm',
-      // Inspection & exec
-      'docker logs',
-      'docker inspect',
-      'docker exec',
-      'docker port',
-      // Curl variants
-      'curl -s',
-      'curl -I',
-      'curl -o',
-    ],
+  "docker-1": {
+    "exactCommands": [
+      "docker --version",
+      "docker info | grep \"Server Version\"",
+      "docker pull nginx:latest",
+      "docker images | grep nginx",
+      "docker run -d  --name my-nginx  -p 8080:80  nginx:latest",
+      "docker ps",
+      "curl -s http://localhost:8080",
+      "curl -I http://localhost:8080",
+      "curl -o /dev/null -s -w \"HTTP Status: %{http_code}\\n\" http://localhost:8080",
+      "docker logs my-nginx",
+      "docker inspect my-nginx | grep -A5 '\"Ports\"'",
+      "docker exec -it my-nginx /bin/bash",
+      "cat /etc/nginx/nginx.conf",
+      "ls /usr/share/nginx/html/",
+      "exit",
+      "docker stop my-nginx",
+      "docker start my-nginx",
+      "docker restart my-nginx",
+      "docker rm my-nginx",
+      "docker rmi nginx:latest",
+      "docker run -d --name nginx-1 -p 8081:80 nginx:latest",
+      "docker run -d --name nginx-2 -p 8082:80 nginx:latest",
+      "curl -s -o /dev/null -w \"nginx-1 status: %{http_code}\\n\" http://localhost:8081",
+      "curl -s -o /dev/null -w \"nginx-2 status: %{http_code}\\n\" http://localhost:8082",
+      "docker stop nginx-1 nginx-2",
+      "docker rm nginx-1 nginx-2",
+      "ls",
+      "clear",
+      "pwd",
+      "cd",
+      "docker ps -a"
+    ]
   },
-
-  'docker-2': {
-    description: 'Volumes & Port Mapping',
-    commands: [
-      'docker',
-      'curl',
-      'echo',
-    ],
-    subcommands: [
-      // Port mapping
-      'docker run',
-      'docker port',
-      'docker stop',
-      'docker rm',
-      'docker restart',
-      'docker exec',
-      'docker ps',
-      'docker images',
-      // Volume operations
-      'docker volume create',
-      'docker volume ls',
-      'docker volume inspect',
-      'docker volume rm',
-      'docker volume prune',
-      // System cleanup
-      'docker system prune',
-      // Curl
-      'curl -s',
-      'curl http',
-    ],
-    // Explicitly NOT allowed (illustrative — checked by absence from subcommands):
-    // 'docker pull' — not in lab-2 content
-    // 'docker rmi'  — not in lab-2 content
+  "docker-2": {
+    "exactCommands": [
+      "docker run -d  --name multi-port  -p 8080:80  -p 8443:443  nginx:latest",
+      "docker port multi-port",
+      "curl -s -o /dev/null -w \"Status: %{http_code}\\n\" http://localhost:8080",
+      "docker run -d --name local-only -p 127.0.0.1:9090:80 nginx:latest",
+      "docker volume create my-data",
+      "docker volume ls",
+      "docker volume inspect my-data",
+      "docker run -d  --name app-with-data  -v my-data:/usr/share/nginx/html  -p 8080:80  nginx:latest",
+      "docker exec app-with-data bash -c \"echo '<h1>Hello from Volume!</h1>' > /usr/share/nginx/html/index.html\"",
+      "curl http://localhost:8080",
+      "docker restart app-with-data",
+      "mkdir -p ~/docker-webroot",
+      "echo \"<h1>Served from Host!</h1>\" > ~/docker-webroot/index.html",
+      "docker run -d  --name bind-nginx  -v ~/docker-webroot:/usr/share/nginx/html:ro  -p 8081:80  nginx:latest",
+      "curl http://localhost:8081",
+      "echo \"<h1>Updated from Host!</h1>\" > ~/docker-webroot/index.html",
+      "docker run -d  --name writer  -v shared-vol:/data  alpine  sh -c \"while true; do date >> /data/log.txt; sleep 2; done\"",
+      "docker run --rm  -v shared-vol:/data:ro  alpine  cat /data/log.txt",
+      "docker stop multi-port local-only app-with-data bind-nginx writer",
+      "docker rm multi-port local-only app-with-data bind-nginx writer",
+      "docker volume rm my-data shared-vol",
+      "docker system prune -f",
+      "docker volume prune -f",
+      "docker volume create webdata",
+      "docker run -d --name mysite -v webdata:/usr/share/nginx/html -p 8080:80 nginx:latest",
+      "docker exec mysite bash -c \"echo '<h1>My Persistent Site</h1>' > /usr/share/nginx/html/index.html\"",
+      "docker stop mysite && docker rm mysite",
+      "docker run -d --name mysite2 -v webdata:/usr/share/nginx/html -p 8080:80 nginx:latest",
+      "ls",
+      "clear",
+      "exit",
+      "pwd",
+      "cd",
+      "docker ps",
+      "docker ps -a"
+    ]
   },
-
-  'docker-3': {
-    description: 'Docker Compose & Multi-Container App',
-    commands: [
-      'docker-compose',
-      'docker',
-      'curl',
-      'ping',
-    ],
-    subcommands: [
-      // Compose operations
-      'docker-compose up',
-      'docker-compose down',
-      'docker-compose ps',
-      'docker-compose exec',
-      'docker-compose build',
-      'docker-compose logs',
-      'docker-compose stop',
-      // Docker basics needed for context
-      'docker ps',
-      'docker images',
-      // Curl
-      'curl http',
-      // Ping (inter-container test)
-      'ping',
-    ],
+  "docker-3": {
+    "exactCommands": [
+      "mkdir -p ~/compose-app",
+      "cd ~/compose-app",
+      "mkdir -p html",
+      "echo \"<h1>Hello from Docker Compose!</h1>\" > html/index.html",
+      "docker-compose up -d",
+      "docker-compose ps",
+      "curl http://localhost:8080",
+      "docker-compose exec web ping -c 3 db",
+      "docker-compose down",
+      "docker-compose down -v",
+      "ls",
+      "clear",
+      "exit",
+      "pwd",
+      "cd",
+      "docker ps",
+      "docker ps -a",
+      "EOF",
+      "version: '3.8'",
+      "services:",
+      "  web:",
+      "    image: nginx:latest",
+      "    ports:",
+      "      - \"8080:80\"",
+      "    volumes:",
+      "      - ./html:/usr/share/nginx/html",
+      "    networks:",
+      "      - app-network",
+      "    depends_on:",
+      "      - db",
+      "  db:",
+      "    image: postgres:15-alpine",
+      "    environment:",
+      "      POSTGRES_USER: lmsuser",
+      "      POSTGRES_PASSWORD: secretpassword",
+      "      POSTGRES_DB: compose_db",
+      "    volumes:",
+      "      - db-data:/var/lib/postgresql/data",
+      "    networks:",
+      "      - app-network",
+      "volumes:",
+      "  db-data:",
+      "networks:",
+      "  app-network:",
+      "    driver: bridge"
+    ]
   },
-
-  /* ------------------------------------------------------------------ */
-  /* LINUX LABS                                                           */
-  /* ------------------------------------------------------------------ */
-
-  'linux-1': {
-    description: 'Membuat Folder, File & Menulis File',
-    commands: [
-      'mkdir',
-      'touch',
-      'echo',
-      'cat',
-      'less',
-      'head',
-      'tail',
-      'ls',
-      'find',
-      'tree',
-    ],
-    subcommands: [
-      'mkdir -p',
-      'ls -la',
-      'ls -l',
-      'find ~',
-      'find .',
-      'head -',
-      'tail -',
-      // Heredoc via cat
-      'cat >',
-    ],
+  "linux-1": {
+    "exactCommands": [
+      "mkdir my-project",
+      "mkdir -p my-project/src/components",
+      "ls -la my-project/",
+      "touch my-project/README.md",
+      "touch my-project/src/index.js",
+      "ls -l my-project/",
+      "ls -l my-project/src/",
+      "echo \"# My Project\" > my-project/README.md",
+      "echo \"console.log('Hello, Linux!');\" > my-project/src/index.js",
+      "echo \"\" >> my-project/README.md",
+      "echo \"Proyek latihan dasar Linux.\" >> my-project/README.md",
+      "echo \"Dibuat pada: $(date)\" >> my-project/README.md",
+      "cat > my-project/notes.txt << 'EOF'",
+      "Catatan Penting:",
+      "- Gunakan mkdir untuk membuat folder",
+      "- Gunakan touch untuk membuat file kosong",
+      "- Gunakan echo > untuk menulis ke file",
+      "- Gunakan cat untuk membaca file",
+      "EOF",
+      "cat my-project/README.md",
+      "less my-project/notes.txt",
+      "head -5 my-project/README.md   # 5 baris pertama",
+      "tail -5 my-project/README.md   # 5 baris terakhir",
+      "mkdir -p ~/devops-lab/{config,logs,scripts}",
+      "touch ~/devops-lab/config/app.env",
+      "echo \"APP_ENV=development\" > ~/devops-lab/config/app.env",
+      "echo \"PORT=8080\" >> ~/devops-lab/config/app.env",
+      "echo \"LOG_LEVEL=debug\" >> ~/devops-lab/config/app.env",
+      "echo \"[$(date)] Server started\" > ~/devops-lab/logs/app.log",
+      "cat ~/devops-lab/config/app.env",
+      "cat ~/devops-lab/logs/app.log",
+      "find ~/devops-lab -type f",
+      "ls",
+      "clear",
+      "exit",
+      "pwd",
+      "cd",
+      "docker ps",
+      "docker ps -a",
+      "EOF",
+      "Catatan Penting:",
+      "- Gunakan mkdir untuk membuat folder",
+      "- Gunakan touch untuk membuat file kosong",
+      "- Gunakan echo > untuk menulis ke file",
+      "- Gunakan cat untuk membaca file"
+    ]
   },
-
-  'linux-2': {
-    description: 'Permissions & Ownership (chmod / chown)',
-    commands: [
-      'chmod',
-      'chown',
-      'chgrp',
-      'ls',
-      'stat',
-      'sudo',
-      'touch',
-      'echo',
-      'mkdir',
-    ],
-    subcommands: [
-      // chmod variants
-      'chmod u+x',
-      'chmod u+s',
-      'chmod o-w',
-      'chmod g=rx',
-      'chmod g+s',
-      'chmod +x',
-      'chmod +t',
-      'chmod -R',
-      'chmod 644',
-      'chmod 755',
-      'chmod 700',
-      'chmod 600',
-      'chmod 4755',
-      'chmod 2755',
-      'chmod 1777',
-      // chown
-      'sudo chown',
-      'chown',
-      'sudo chgrp',
-      'chgrp',
-      // listing
-      'ls -la',
-      'ls -l',
-      'ls -ld',
-      // stat
-      'stat ',
-    ],
+  "linux-2": {
+    "exactCommands": [
+      "ls -la ~/",
+      "stat my-project/README.md",
+      "chmod u+x script.sh",
+      "chmod o-w config.txt",
+      "chmod g=rx logs/",
+      "chmod 644 config.txt",
+      "chmod 755 deploy.sh",
+      "chmod 700 secret.sh",
+      "chmod 600 ~/.ssh/id_rsa",
+      "touch test-permission.sh",
+      "echo \"#!/bin/bash\" > test-permission.sh",
+      "echo \"echo 'Hello World'\" >> test-permission.sh",
+      "ls -l test-permission.sh",
+      "chmod +x test-permission.sh",
+      "./test-permission.sh",
+      "chown [owner][:group] file",
+      "sudo chown www-data file.txt",
+      "sudo chown www-data:www-data /var/www/html/",
+      "sudo chown :developers project/",
+      "sudo chown -R labuser:labuser ~/my-project/",
+      "sudo chgrp developers /var/www/html/",
+      "chmod u+s program",
+      "chmod 4755 program",
+      "chmod g+s shared-dir/",
+      "chmod 2755 shared-dir/",
+      "chmod +t /tmp/shared/",
+      "chmod 1777 /tmp/shared/",
+      "ls -ld /tmp",
+      "mkdir -p ~/webserver/{public,private,logs}",
+      "echo \"<?php phpinfo(); ?>\" > ~/webserver/public/index.php",
+      "echo \"DB_PASSWORD=secret123\" > ~/webserver/private/.env",
+      "touch ~/webserver/logs/access.log",
+      "chmod 755 ~/webserver/public/          # direktori publik",
+      "chmod 644 ~/webserver/public/index.php # file publik (bisa dibaca semua)",
+      "chmod 700 ~/webserver/private/         # direktori privat (hanya owner)",
+      "chmod 600 ~/webserver/private/.env     # file sensitif (hanya owner baca/tulis)",
+      "chmod 755 ~/webserver/logs/            # direktori log",
+      "chmod 644 ~/webserver/logs/access.log  # log bisa dibaca",
+      "ls -la ~/webserver/",
+      "ls -la ~/webserver/public/",
+      "ls -la ~/webserver/private/",
+      "ls",
+      "clear",
+      "exit",
+      "pwd",
+      "cd",
+      "docker ps",
+      "docker ps -a"
+    ]
   },
-
-  'linux-3': {
-    description: 'Bash Scripting & Automation',
-    commands: [
-      'bash',
-      'sh',
-      'chmod',
-      'touch',
-      'mkdir',
-      'cat',
-      'echo',
-      'ls',
-      'tar',
-      'free',
-      'sleep',
-      'date',
-    ],
-    subcommands: [
-      // Script creation
-      'touch backup.sh',
-      'touch monitor.sh',
-      'cat > backup.sh',
-      'cat > monitor.sh',
-      // Permissions
-      'chmod +x',
-      'chmod +x backup.sh',
-      'chmod +x monitor.sh',
-      // Execution
-      './backup.sh',
-      './monitor.sh',
-      // Directory setup
-      'mkdir -p ~/scripts',
-      'mkdir -p ~/devops-lab',
-      'mkdir -p ~/backup',
-      // File ops
-      'ls -l ~/backup',
-      'ls -l ~/scripts',
-      // Archive
-      'tar -czf',
-      // System monitoring
-      'free -h',
-      'sleep ',
-    ],
-  },
+  "linux-3": {
+    "exactCommands": [
+      "mkdir -p ~/scripts",
+      "cd ~/scripts",
+      "touch backup.sh",
+      "cat > backup.sh << 'EOF'",
+      "SOURCE_DIR=\"$HOME/devops-lab\"",
+      "BACKUP_DIR=\"$HOME/backup\"",
+      "BACKUP_FILE=\"backup_$(date +%Y%m%d_%H%M%S).tar.gz\"",
+      "echo \"=== Memulai Proses Backup ===\"",
+      "if [ -d \"$SOURCE_DIR\" ]; then",
+      "mkdir -p \"$BACKUP_DIR\"",
+      "tar -czf \"$BACKUP_DIR/$BACKUP_FILE\" -C \"$SOURCE_DIR\" .",
+      "echo \"Backup berhasil disimpan di: $BACKUP_DIR/$BACKUP_FILE\"",
+      "else",
+      "echo \"Error: Direktori sumber $SOURCE_DIR tidak ditemukan.\"",
+      "exit 1",
+      "fi",
+      "echo \"=== Backup Selesai ===\"",
+      "EOF",
+      "chmod +x backup.sh",
+      "mkdir -p ~/devops-lab",
+      "echo \"Data penting 1\" > ~/devops-lab/file1.txt",
+      "echo \"Data penting 2\" > ~/devops-lab/file2.txt",
+      "./backup.sh",
+      "ls -l ~/backup",
+      "cat > monitor.sh << 'EOF'",
+      "echo \"=== System Monitoring ===\"",
+      "for i in {1..3}",
+      "do",
+      "echo \"Pengecekan ke-$i pada: $(date)\"",
+      "echo \"Free Memory:\"",
+      "free -h | grep \"Mem:\"",
+      "echo \"------------------------\"",
+      "sleep 2",
+      "done",
+      "chmod +x monitor.sh",
+      "./monitor.sh",
+      "ls",
+      "clear",
+      "exit",
+      "pwd",
+      "cd",
+      "docker ps",
+      "docker ps -a",
+      "EOF",
+      "#!/bin/bash",
+      "# Konfigurasi",
+      "SOURCE_DIR=\"$HOME/devops-lab\"",
+      "BACKUP_DIR=\"$HOME/backup\"",
+      "BACKUP_FILE=\"backup_$(date +%Y%m%d_%H%M%S).tar.gz\"",
+      "echo \"=== Memulai Proses Backup ===\"",
+      "if [ -d \"$SOURCE_DIR\" ]; then",
+      "mkdir -p \"$BACKUP_DIR\"",
+      "tar -czf \"$BACKUP_DIR/$BACKUP_FILE\" -C \"$SOURCE_DIR\" .",
+      "echo \"Backup berhasil disimpan di: $BACKUP_DIR/$BACKUP_FILE\"",
+      "else",
+      "echo \"Error: Direktori sumber $SOURCE_DIR tidak ditemukan.\"",
+      "exit 1",
+      "fi",
+      "echo \"=== Backup Selesai ===\"",
+      "echo \"=== System Monitoring ===\"",
+      "for i in {1..3}",
+      "do",
+      "echo \"Pengecekan ke-$i pada: $(date)\"",
+      "echo \"Free Memory:\"",
+      "free -h | grep \"Mem:\"",
+      "echo \"------------------------\"",
+      "sleep 2",
+      "done"
+    ]
+  }
 };
 
 /**
  * Check whether a given raw shell input is allowed for the current lab.
- *
  * @param {string} labKey   - e.g. 'docker-1'
- * @param {string} rawInput - the full line typed by the user (may include flags)
+ * @param {string} rawInput - the full line typed by the user
  * @returns {{ allowed: boolean, reason: string }}
  */
 function isCommandAllowed(labKey, rawInput) {
   const input = rawInput.trim();
   if (!input) return { allowed: true, reason: 'empty' };
-
-  // Comments are fine
-  if (input.startsWith('#')) return { allowed: true, reason: 'comment' };
-
-  // Always allow navigational shortcuts: ctrl+c, clear, exit, cd, etc.
+  
+  // Allow safe basic navigation
   const baseCmd = input.split(/\s+/)[0];
-
-  if (UNIVERSAL_COMMANDS.includes(baseCmd)) {
-    return { allowed: true, reason: 'universal' };
+  if (UNIVERSAL_COMMANDS.includes(baseCmd) && !/[;&|$`<>]/.test(input)) {
+    return { allowed: true, reason: 'universal-safe' };
   }
 
   const labRules = LAB_ALLOWLIST[labKey];
   if (!labRules) {
-    // No rules defined for this lab — permissive fallback
-    return { allowed: true, reason: 'no-rules' };
+    return { allowed: false, reason: 'no rules defined for this lab' };
   }
 
-  // Check subcommands first (more specific, longest prefix match wins)
-  const sortedSubs = [...labRules.subcommands].sort((a, b) => b.length - a.length);
-  for (const sub of sortedSubs) {
-    if (input.startsWith(sub)) {
-      return { allowed: true, reason: `subcommand:${sub}` };
+  // Exact Match Validation
+  // Try to match the exact command ignoring extra spaces
+  const normalizedInput = input.replace(/\s+/g, ' ');
+  for (const cmd of labRules.exactCommands) {
+    if (cmd.replace(/\s+/g, ' ') === normalizedInput) {
+      return { allowed: true, reason: 'exact-match' };
     }
+    // Also allow prefix match for things like cd ... or if it's safe
   }
-
-  // Check base command
-  if (labRules.commands.includes(baseCmd)) {
-    return { allowed: true, reason: `command:${baseCmd}` };
+  
+  // Exception for cd commands since paths can vary slightly
+  if (input.startsWith('cd ') && !/[;&|$`<>]/.test(input)) {
+      return { allowed: true, reason: 'safe-cd' };
   }
 
   return {
     allowed: false,
-    reason: `'${baseCmd}' is not available in lab '${labKey}'`,
+    reason: `Command '${input}' is not listed in the lab instructions. Strict exact match required.`,
   };
 }
 
-// Node.js export (used by server.js)
 if (typeof module !== 'undefined') {
   module.exports = { LAB_ALLOWLIST, UNIVERSAL_COMMANDS, isCommandAllowed };
 }
-
-// ES module / browser export
 if (typeof window !== 'undefined') {
   window.__LAB_ALLOWLIST__ = { LAB_ALLOWLIST, UNIVERSAL_COMMANDS, isCommandAllowed };
 }

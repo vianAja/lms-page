@@ -8,7 +8,7 @@ import { EmptyState } from '@/components/vn-ui';
 import LabShellClient from '@/components/LabShellClient';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { LAB_ALLOWLIST } = require('@/lib/lab-allowlist') as {
-  LAB_ALLOWLIST: Record<string, { commands: string[]; subcommands: string[]; description: string }>;
+  LAB_ALLOWLIST: Record<string, { exactCommands: string[] }>;
 };
 
 export default async function LabPage({ params }: { params: Promise<{ id: string }> }) {
