@@ -13,6 +13,7 @@ type LabShellClientProps = {
   markdownContent: string;
   username: string;
   nextLabHref: string | null;
+  prevLabHref: string | null;
   allowlist?: {
     exactCommands: string[];
   };
@@ -20,7 +21,7 @@ type LabShellClientProps = {
 
 const SESSION_LIMIT_SECONDS = 15 * 60; // 15 minutes
 
-export default function LabShellClient({ labId, labTitle, markdownContent, username, nextLabHref, allowlist }: LabShellClientProps) {
+export default function LabShellClient({ labId, labTitle, markdownContent, username, nextLabHref, prevLabHref, allowlist }: LabShellClientProps) {
   const router = useRouter();
   const [connectSignal, setConnectSignal] = useState(0);
   const [disconnectSignal, setDisconnectSignal] = useState(0);
@@ -184,11 +185,12 @@ export default function LabShellClient({ labId, labTitle, markdownContent, usern
             borderBottom: '1px solid rgba(241,247,212,0.10)',
           }}
         >
-          {/* Left: back only */}
-          <div className="flex min-w-0 items-center gap-3">
+          {/* Left: back arrow icon only + previous lab */}
+          <div className="flex min-w-0 items-center gap-2">
             <Link
               href="/"
-              className="inline-flex items-center gap-1.5 rounded border px-3 py-1 text-xs font-semibold transition-all"
+              title="Back to Portal"
+              className="inline-flex items-center justify-center h-8 w-8 rounded border transition-all"
               style={{
                 color: '#F1F7D4',
                 borderColor: 'rgba(241,247,212,0.28)',
@@ -197,8 +199,21 @@ export default function LabShellClient({ labId, labTitle, markdownContent, usern
               onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(241,247,212,0.70)'; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(241,247,212,0.28)'; }}
             >
-              ← Back to Portal
+              ←
             </Link>
+
+            {prevLabHref ? (
+              <button
+                type="button"
+                onClick={() => { setIsNavigating(true); setTimeout(() => router.push(prevLabHref!), 400); }}
+                className="inline-flex items-center justify-center min-h-7 rounded px-3 py-1 text-xs font-bold transition-all"
+                style={{ background: 'rgba(241,247,212,0.10)', color: 'rgba(241,247,212,0.75)', border: '1px solid rgba(241,247,212,0.20)' }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(241,247,212,0.20)'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(241,247,212,0.10)'; }}
+              >
+                ← Prev Lab
+              </button>
+            ) : null}
           </div>
 
           {/* Center: session countdown (only when connected) */}

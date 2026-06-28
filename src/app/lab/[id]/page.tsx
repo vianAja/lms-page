@@ -41,6 +41,7 @@ export default async function LabPage({ params }: { params: Promise<{ id: string
   let markdownContent = '';
   let labTitle = `Lab ${labKey}`;
   let nextLabHref: string | null = null;
+  let prevLabHref: string | null = null;
 
   try {
     const dbResult = await db.query(
@@ -78,6 +79,17 @@ export default async function LabPage({ params }: { params: Promise<{ id: string
       if (nextResult.rows[0]?.lab_key) {
         nextLabHref = `/lab/${nextResult.rows[0].lab_key}`;
       }
+
+      // Find previous lab in same topic
+      const prevResult = await db.query<{ lab_key: string }>(
+        `SELECT lab_key FROM labs
+         WHERE topic_key = $1 AND order_num < $2
+         ORDER BY order_num DESC LIMIT 1`,
+        [dbLab.topic_key, dbLab.order_num]
+      );
+      if (prevResult.rows[0]?.lab_key) {
+        prevLabHref = `/lab/${prevResult.rows[0].lab_key}`;
+      }
     }
   } catch {
     try {
@@ -98,6 +110,7 @@ export default async function LabPage({ params }: { params: Promise<{ id: string
         markdownContent={markdownContent}
         username={session.username || ''}
         nextLabHref={nextLabHref}
+        prevLabHref={prevLabHref}
         allowlist={LAB_ALLOWLIST[labKey] ?? undefined}
       />
     </div>
