@@ -14,9 +14,7 @@ type LabShellClientProps = {
   username: string;
   nextLabHref: string | null;
   allowlist?: {
-    commands: string[];
-    subcommands: string[];
-    description?: string;
+    exactCommands: string[];
   };
 };
 
