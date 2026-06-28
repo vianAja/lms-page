@@ -7,7 +7,7 @@ async function seedV2() {
 
     // SSH config - reads from env or falls back to defaults
     const sshHost = process.env.SSH_HOST || '127.0.0.1';
-    const sshUser = process.env.SSH_USER || 'admin';
+    const sshUser = process.env.SSH_USER || 'labuser';
     const sshPort = parseInt(process.env.SSH_PORT || '22', 10);
 
     // 1. Insert ALL labs with correct order_num
