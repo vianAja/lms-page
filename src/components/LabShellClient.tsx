@@ -273,8 +273,8 @@ export default function LabShellClient({ labId, labTitle, markdownContent, usern
           </div>
         </div>
 
-        {/* Main Split Panels */}
-        <div className="flex-1 min-h-0">
+        {/* Main Split Panels — fills remaining height, panels scroll internally */}
+        <div className="flex-1 overflow-hidden" style={{ minHeight: 0 }}>
           <ResizableSplit
             initialLeftWidth={50}
             leftPanel={

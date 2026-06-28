@@ -77,11 +77,11 @@ export default function ResizableSplit({ leftPanel, rightPanel, initialLeftWidth
 
   if (!isDesktop) {
     return (
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="h-[45vh] overflow-hidden" style={{ borderBottom: '1px solid #c8dfc9', background: '#ffffff' }}>
+      <div className="flex-1 flex flex-col overflow-hidden" style={{ height: '100%' }}>
+        <div className="flex flex-col overflow-hidden" style={{ height: '45%', borderBottom: '1px solid #c8dfc9', background: '#ffffff' }}>
           {leftPanel}
         </div>
-        <div className="h-[45vh] overflow-hidden" style={{ background: '#1e1d2e' }}>
+        <div className="flex flex-col overflow-hidden" style={{ height: '55%', background: '#1e1d2e' }}>
           {rightPanel}
         </div>
       </div>
@@ -91,13 +91,13 @@ export default function ResizableSplit({ leftPanel, rightPanel, initialLeftWidth
   return (
     <div 
       ref={containerRef} 
-      className="flex-1 flex overflow-hidden select-none"
+      className="flex h-full overflow-hidden select-none"
       style={{ cursor: isResizing ? 'col-resize' : 'default' }}
     >
-      {/* Left Panel — white content area */}
+      {/* Left Panel — white content area, scrolls internally */}
       <div
         style={{ width: `${leftWidth}%`, background: '#ffffff', borderRight: '1px solid #c8dfc9' }}
-        className="overflow-hidden"
+        className="flex h-full flex-col overflow-hidden"
       >
         {leftPanel}
       </div>
@@ -117,10 +117,10 @@ export default function ResizableSplit({ leftPanel, rightPanel, initialLeftWidth
         />
       </div>
 
-      {/* Right Panel — dark terminal area */}
+      {/* Right Panel — dark terminal area, fills remaining space */}
       <div
         style={{ width: `${100 - leftWidth}%`, background: '#1e1d2e' }}
-        className="flex flex-col"
+        className="flex h-full flex-col"
       >
         {rightPanel}
       </div>

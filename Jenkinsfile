@@ -34,18 +34,25 @@ pipeline {
                 sh 'docker compose up -d db'
                 
                 // Tunggu sebentar agar PostgreSQL siap menerima koneksi
-                sh 'sleep 5'
+                sh 'sleep 8'
                 
                 // Jalankan container aplikasi
                 sh 'docker compose up -d'
                 
-                // Eksekusi inisialisasi database dengan urutan yang benar:
-                // 1. seed.js    → Buat tabel dasar (users, lab_sessions, lab_access) + data admin
-                // 2. migrate.js → Tambah kolom baru ke tabel yang sudah ada (ALTER TABLE)
-                // 3. seed-v2.js → Seed data labs, classes, enrollments
-                sh 'docker exec lms-app node src/lib/seed.js || true'
-                sh 'docker exec lms-app node src/lib/migrate.js || true'
-                sh 'docker exec lms-app node src/lib/seed-v2.js || true'
+                // Tunggu sebentar agar app container selesai start
+                sh 'sleep 5'
+            }
+        }
+
+        stage('Database Migration') {
+            steps {
+                // Urutan wajib:
+                // 1. seed.js    → CREATE TABLE dasar (users, lab_sessions, lab_access) + insert admin
+                // 2. migrate.js → ALTER TABLE (tambah kolom) + buat UNIQUE constraint baru
+                // 3. seed-v2.js → Insert/update semua labs & lab_sessions untuk semua user
+                sh 'docker exec lms-app node src/lib/seed.js'
+                sh 'docker exec lms-app node src/lib/migrate.js'
+                sh 'docker exec lms-app node src/lib/seed-v2.js'
             }
         }
     }

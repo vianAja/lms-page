@@ -103,7 +103,7 @@ export default async function LabPage({ params }: { params: Promise<{ id: string
   }
 
   return (
-    <div className="min-h-dvh bg-[#F1F7D4] text-[#1e1d2e]">
+    <div className="h-dvh overflow-hidden bg-[#F1F7D4] text-[#1e1d2e]">
       <LabShellClient
         labId={labKey}
         labTitle={labTitle}
