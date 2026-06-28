@@ -5,7 +5,6 @@ import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { io, Socket } from 'socket.io-client';
 import '@xterm/xterm/css/xterm.css';
-import { Icon } from '@/components/vn-ui';
 
 interface WebTerminalProps {
   labId: string;
@@ -58,15 +57,34 @@ export default function WebTerminal({
     if (!terminalRef.current) return;
     isUnmountedRef.current = false;
 
-    // Initialize Terminal
+    // Initialize Terminal — palette-matched theme
     const term = new Terminal({
       cursorBlink: true,
-      fontSize: 14,
+      fontSize: 13,
       fontFamily: '"JetBrains Mono", monospace',
+      lineHeight: 1.5,
       theme: {
-        background: '#000000',
-        foreground: '#dfe2eb',
-        cursor: '#89ceff',
+        background: '#0d0d14',
+        foreground: '#F1F7D4',
+        cursor: '#6EADBC',
+        cursorAccent: '#0d0d14',
+        selectionBackground: 'rgba(110, 173, 188, 0.28)',
+        black: '#1e1d2e',
+        red: '#b04040',
+        green: '#9FCBAD',
+        yellow: '#e8c86a',
+        blue: '#6EADBC',
+        magenta: '#8a7fc0',
+        cyan: '#6EADBC',
+        white: '#F1F7D4',
+        brightBlack: '#4A4466',
+        brightRed: '#d46060',
+        brightGreen: '#b8dfc4',
+        brightYellow: '#f0d880',
+        brightBlue: '#88c8d8',
+        brightMagenta: '#a89ed8',
+        brightCyan: '#88c8d8',
+        brightWhite: '#ffffff',
       },
     });
     const fitAddon = new FitAddon();
@@ -182,35 +200,34 @@ export default function WebTerminal({
   useEffect(() => {
     if (connectSignal <= 0) return;
     handleConnectVm();
-    // Intentionally reacting to parent start signal.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connectSignal]);
 
   useEffect(() => {
     if (disconnectSignal <= 0) return;
     handleStopVm();
-    // Intentionally reacting to parent stop signal.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [disconnectSignal]);
 
-  const statusDotClass =
+  // Status indicator colors
+  const dotColor =
     status === 'connected'
-      ? 'bg-secondary'
+      ? '#9FCBAD'
       : status === 'reconnecting'
-        ? 'bg-tertiary'
+        ? '#e8c86a'
         : status === 'failed'
-          ? 'bg-error'
-          : 'bg-outline';
+          ? '#b04040'
+          : 'rgba(110,173,188,0.45)';
 
   const statusText =
     status === 'connected'
       ? 'Connected'
       : status === 'reconnecting'
-        ? `Reconnecting... (attempt ${attempt} of ${MAX_RECONNECT_ATTEMPTS})`
+        ? `Reconnecting... (${attempt}/${MAX_RECONNECT_ATTEMPTS})`
         : status === 'failed'
-          ? 'Connection failed.'
+          ? 'Connection failed'
           : status === 'connecting'
-            ? 'Connecting to lab environment...'
+            ? 'Connecting...'
             : 'Disconnected';
 
   const hours = String(Math.floor(elapsedSeconds / 3600)).padStart(2, '0');
@@ -218,30 +235,59 @@ export default function WebTerminal({
   const seconds = String(elapsedSeconds % 60).padStart(2, '0');
 
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden rounded-lg border border-outline-variant bg-black">
-      <div className="flex h-12 items-center justify-between border-b border-outline-variant bg-black px-4 text-xs text-on-surface-variant">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <span className="h-3 w-3 rounded-full" style={{ backgroundColor: '#ff5f56' }} />
-            <span className="h-3 w-3 rounded-full" style={{ backgroundColor: '#ffbd2e' }} />
-            <span className="h-3 w-3 rounded-full" style={{ backgroundColor: '#27c93f' }} />
-          </div>
-          <div className="flex items-center gap-2 font-code text-code-md">
-            <Icon name="terminal" className="text-[18px]" />
-            <span>SSH Terminal — {labId}</span>
-          </div>
+    <div
+      className="flex h-full w-full flex-col overflow-hidden"
+      style={{
+        borderRadius: '10px',
+        border: '1px solid rgba(0,0,0,0.45)',
+        background: '#0d0d14',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.60), 0 4px 16px rgba(0,0,0,0.40)',
+      }}
+    >
+      {/* Mac-style title bar — only dots + status + timer */}
+      <div
+        className="flex h-10 shrink-0 items-center justify-between px-4"
+        style={{
+          background: '#1a1a24',
+          borderBottom: '1px solid rgba(0,0,0,0.40)',
+          borderRadius: '10px 10px 0 0',
+        }}
+      >
+        {/* Left: traffic light dots only */}
+        <div className="flex items-center gap-1.5">
+          <span className="h-3 w-3 rounded-full" style={{ background: '#ff5f56' }} />
+          <span className="h-3 w-3 rounded-full" style={{ background: '#ffbd2e' }} />
+          <span className="h-3 w-3 rounded-full" style={{ background: '#27c93f' }} />
         </div>
+
+        {/* Right: status dot + text + timer */}
         <div className="flex items-center gap-3">
-          <div className="rounded-sm border border-outline-variant/50 bg-surface-variant/50 px-3 py-1 font-code tabular-nums text-on-surface">
-            {hours}:{minutes}:{seconds}
-          </div>
-          <div className="flex items-center gap-2 font-code text-code-md">
-            <span className={`h-2.5 w-2.5 rounded-full ${statusDotClass} ${status === 'connected' ? 'animate-pulse' : ''}`} />
+          <div className="flex items-center gap-1.5 font-mono text-xs" style={{ color: 'rgba(241,247,212,0.70)' }}>
+            <span
+              className="h-2 w-2 rounded-full"
+              style={{
+                background: dotColor,
+                boxShadow: status === 'connected' ? `0 0 5px ${dotColor}` : 'none',
+                transition: 'background 0.3s',
+              }}
+            />
             <span>{statusText}</span>
+          </div>
+          <div
+            className="rounded px-2.5 py-0.5 font-mono tabular-nums text-xs"
+            style={{
+              background: 'rgba(241,247,212,0.05)',
+              border: '1px solid rgba(241,247,212,0.09)',
+              color: 'rgba(241,247,212,0.75)',
+            }}
+          >
+            {hours}:{minutes}:{seconds}
           </div>
         </div>
       </div>
-      <div ref={terminalRef} className="w-full flex-1 p-3" />
+
+      {/* xterm viewport */}
+      <div ref={terminalRef} className="w-full flex-1 overflow-hidden" style={{ padding: '12px 8px 8px' }} />
     </div>
   );
 }

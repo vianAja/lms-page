@@ -6,13 +6,19 @@ export function Icon({
   name,
   filled = false,
   className,
+  style,
 }: {
   name: string;
   filled?: boolean;
   className?: string;
+  style?: React.CSSProperties;
 }) {
   return (
-    <span className={cn('material-symbols-outlined select-none', filled && 'material-symbols-filled', className)} aria-hidden="true">
+    <span 
+      className={cn('material-symbols-outlined select-none', filled && 'material-symbols-filled', className)} 
+      aria-hidden="true"
+      style={style}
+    >
       {name}
     </span>
   );
@@ -21,12 +27,18 @@ export function Icon({
 export function BrandMark({ compact = false }: { compact?: boolean }) {
   return (
     <div className="flex items-center gap-3">
-      <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-outline-variant bg-surface-container-lowest">
-        <Icon name="terminal" className="text-primary" />
+      <div
+        className="flex h-10 w-10 items-center justify-center rounded-lg"
+        style={{
+          background: '#4A4466',
+          border: '1px solid rgba(74,68,102,0.25)',
+        }}
+      >
+        <Icon name="terminal" className="text-xl" style={{ color: '#F1F7D4' }} />
       </div>
       <div className={cn(compact && 'hidden sm:block')}>
-        <div className="font-headline text-headline-md font-semibold text-on-surface">VN-Labs</div>
-        <div className="text-label-caps text-on-surface-variant">DevOps Lab Platform</div>
+        <div className="font-headline text-[17px] font-bold" style={{ color: '#4A4466' }}>VN-Labs</div>
+        <div className="font-mono text-[11px] uppercase tracking-widest" style={{ color: 'rgba(74,68,102,0.60)' }}>DevOps Lab Platform</div>
       </div>
     </div>
   );
@@ -47,7 +59,10 @@ export function UserAvatar({
     .join('');
 
   return (
-    <div className={cn('flex h-8 w-8 items-center justify-center rounded-full bg-primary-container text-sm font-bold text-white', className)}>
+    <div
+      className={cn('flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold', className)}
+      style={{ background: '#4A4466', color: '#F1F7D4' }}
+    >
       {initials || 'VN'}
     </div>
   );
@@ -129,43 +144,22 @@ export function EmptyState({
 }
 
 export function TopAppBar({
-  active = 'Class',
   name,
 }: {
   active?: 'Class' | 'Module' | 'Profile';
   name: string;
 }) {
-  const links = [
-    { label: 'Class', href: '/' },
-    { label: 'Module', href: '/progress' },
-    { label: 'Profile', href: '/progress' },
-  ] as const;
-
   return (
-    <header className="sticky top-0 z-40 border-b border-outline-variant bg-surface-container/95 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between gap-4 px-4 md:px-6">
+    <header
+      className="sticky top-0 z-40 backdrop-blur-sm"
+      style={{
+        background: 'rgba(249,252,232,0.94)',
+        borderBottom: '1px solid #c8dfc9',
+      }}
+    >
+      <div className="mx-auto flex h-14 max-w-[1440px] items-center justify-between gap-4 px-4 md:px-6">
         <BrandMark compact />
-        <nav className="hidden items-center gap-8 md:flex">
-          {links.map((link) => (
-            <Link
-              key={link.label}
-              href={link.href}
-              className={cn(
-                'pb-1 font-body text-body-sm transition-colors hover:text-secondary',
-                active === link.label ? 'border-b-2 border-secondary text-secondary' : 'text-on-surface-variant',
-              )}
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
-        <div className="flex items-center gap-3">
-          <button aria-label="Open notifications" className="focus-ring relative flex h-11 w-11 items-center justify-center rounded-sm border border-outline-variant bg-surface-container-high text-on-surface-variant transition-colors hover:border-primary-container hover:text-primary">
-            <Icon name="notifications" />
-            <span className="absolute right-2 top-2 rounded-full bg-error px-1.5 py-0.5 font-code text-[10px] leading-none text-[#1b0000]">3</span>
-          </button>
-          <StudentProfileMenu name={name} />
-        </div>
+        <StudentProfileMenu name={name} />
       </div>
     </header>
   );

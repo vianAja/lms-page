@@ -10,7 +10,6 @@ type AdminLayoutShellProps = {
   adminName: string;
   counts: {
     users: number;
-    classes: number;
     labs: number;
   };
   children: React.ReactNode;
@@ -19,8 +18,8 @@ type AdminLayoutShellProps = {
 const navItems = [
   { href: '/dashboard', label: 'Overview', icon: 'dashboard' },
   { href: '/dashboard/users', label: 'Users', icon: 'group', countKey: 'users' as const },
-  { href: '/dashboard/classes', label: 'Classes', icon: 'assignment', countKey: 'classes' as const },
-  { href: '/dashboard/manage-student', label: 'Labs', icon: 'science', countKey: 'labs' as const },
+  { href: '/dashboard/labs', label: 'Labs', icon: 'science', countKey: 'labs' as const },
+  { href: '/', label: 'Student View', icon: 'school' },
   { href: '/dashboard/settings', label: 'Settings', icon: 'settings' },
 ];
 

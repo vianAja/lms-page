@@ -8,19 +8,14 @@ import { EmptyState } from '@/components/vn-ui';
 import LabShellClient from '@/components/LabShellClient';
 
 export default async function LabPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id: labId } = await params;
+  const { id: labKey } = await params;
   const session = await requireSession();
 
+  // Access control for students only
   if (session.role === 'student') {
     const accessResult = await db.query(
-      `
-        SELECT 1
-        FROM class_enrollments ce
-        JOIN labs l ON l.class_id = ce.class_id
-        WHERE ce.username = $1 AND l.lab_key = $2
-        LIMIT 1
-      `,
-      [session.username, labId]
+      `SELECT 1 FROM lab_access WHERE username = $1 AND lab_key = $2 AND has_access = true LIMIT 1`,
+      [session.username, labKey]
     );
 
     if (!accessResult.rowCount) {
@@ -40,13 +35,13 @@ export default async function LabPage({ params }: { params: Promise<{ id: string
   }
 
   let markdownContent = '';
-  let labTitle = `Lab ${labId}`;
+  let labTitle = `Lab ${labKey}`;
   let nextLabHref: string | null = null;
 
   try {
     const dbResult = await db.query(
-      'SELECT id, class_id, order_num, title, content FROM labs WHERE lab_key = $1 LIMIT 1',
-      [labId]
+      'SELECT id, topic_key, order_num, title, content FROM labs WHERE lab_key = $1 LIMIT 1',
+      [labKey]
     );
     const dbLab = dbResult.rows[0];
 
@@ -54,22 +49,27 @@ export default async function LabPage({ params }: { params: Promise<{ id: string
       labTitle = dbLab.title;
     }
 
-    if (dbLab?.content) {
+    if (dbLab?.content && dbLab.content.trim().length > 0) {
       markdownContent = dbLab.content;
     } else {
-      markdownContent = await fs.readFile(path.join(process.cwd(), 'page', `lab${labId}.md`), 'utf8');
+      // Fall back to md file
+      try {
+        markdownContent = await fs.readFile(
+          path.join(process.cwd(), 'page', `${labKey}.md`),
+          'utf8'
+        );
+      } catch {
+        markdownContent = `# ${labTitle}\n\nKonten lab sedang dalam persiapan.`;
+      }
     }
 
-    if (dbLab?.class_id && typeof dbLab.order_num === 'number') {
+    // Find next lab in same topic
+    if (dbLab?.topic_key && typeof dbLab.order_num === 'number') {
       const nextResult = await db.query<{ lab_key: string }>(
-        `
-          SELECT lab_key
-          FROM labs
-          WHERE class_id = $1 AND order_num > $2
-          ORDER BY order_num ASC, id ASC
-          LIMIT 1
-        `,
-        [dbLab.class_id, dbLab.order_num]
+        `SELECT lab_key FROM labs
+         WHERE topic_key = $1 AND order_num > $2
+         ORDER BY order_num ASC LIMIT 1`,
+        [dbLab.topic_key, dbLab.order_num]
       );
       if (nextResult.rows[0]?.lab_key) {
         nextLabHref = `/lab/${nextResult.rows[0].lab_key}`;
@@ -77,23 +77,24 @@ export default async function LabPage({ params }: { params: Promise<{ id: string
     }
   } catch {
     try {
-      markdownContent = await fs.readFile(path.join(process.cwd(), 'page', `lab${labId}.md`), 'utf8');
+      markdownContent = await fs.readFile(
+        path.join(process.cwd(), 'page', `${labKey}.md`),
+        'utf8'
+      );
     } catch {
       markdownContent = '# Lab Not Found\nThe requested lab document could not be loaded.';
     }
   }
 
-  const name = session.fullname || session.username || 'Student';
-
   return (
-    <StudentFrame name={name} active="Class">
+    <div className="min-h-dvh bg-[#F1F7D4] text-[#1e1d2e]">
       <LabShellClient
-        labId={labId}
+        labId={labKey}
         labTitle={labTitle}
         markdownContent={markdownContent}
         username={session.username || ''}
         nextLabHref={nextLabHref}
       />
-    </StudentFrame>
+    </div>
   );
 }

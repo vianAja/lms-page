@@ -78,10 +78,10 @@ export default function ResizableSplit({ leftPanel, rightPanel, initialLeftWidth
   if (!isDesktop) {
     return (
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="h-[45vh] overflow-hidden border-b border-outline-variant bg-surface-container">
+        <div className="h-[45vh] overflow-hidden" style={{ borderBottom: '1px solid #c8dfc9', background: '#ffffff' }}>
           {leftPanel}
         </div>
-        <div className="h-[45vh] overflow-hidden bg-black">
+        <div className="h-[45vh] overflow-hidden" style={{ background: '#1e1d2e' }}>
           {rightPanel}
         </div>
       </div>
@@ -94,10 +94,10 @@ export default function ResizableSplit({ leftPanel, rightPanel, initialLeftWidth
       className="flex-1 flex overflow-hidden select-none"
       style={{ cursor: isResizing ? 'col-resize' : 'default' }}
     >
-      {/* Left Panel */}
-      <div 
-        style={{ width: `${leftWidth}%` }} 
-        className="overflow-hidden border-r border-outline-variant bg-surface-container"
+      {/* Left Panel — white content area */}
+      <div
+        style={{ width: `${leftWidth}%`, background: '#ffffff', borderRight: '1px solid #c8dfc9' }}
+        className="overflow-hidden"
       >
         {leftPanel}
       </div>
@@ -106,15 +106,21 @@ export default function ResizableSplit({ leftPanel, rightPanel, initialLeftWidth
       <div
         onMouseDown={startResizing}
         onTouchStart={startResizing}
-        className="group z-10 flex w-[6px] flex-shrink-0 cursor-col-resize items-center justify-center bg-surface-container-highest transition-all hover:bg-primary-container/40 hover:shadow-[0_0_10px_rgba(14,165,233,0.5)]"
+        className="group z-10 flex w-[5px] flex-shrink-0 cursor-col-resize items-center justify-center transition-all"
+        style={{ background: '#e2eabe' }}
+        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#9FCBAD'; }}
+        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = '#e2eabe'; }}
       >
-        <div className="h-8 w-1 rounded-full bg-outline-variant transition-colors group-hover:bg-primary-container" />
+        <div
+          className="h-10 w-[3px] rounded-full transition-colors"
+          style={{ background: '#c8dfc9' }}
+        />
       </div>
 
-      {/* Right Panel */}
-      <div 
-        style={{ width: `${100 - leftWidth}%` }} 
-        className="flex flex-col bg-black"
+      {/* Right Panel — dark terminal area */}
+      <div
+        style={{ width: `${100 - leftWidth}%`, background: '#1e1d2e' }}
+        className="flex flex-col"
       >
         {rightPanel}
       </div>

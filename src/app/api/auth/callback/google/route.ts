@@ -7,13 +7,14 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
   
-  if (!code) {
-    return NextResponse.redirect(new URL('/login?error=NoCode', request.url));
-  }
-
   const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
   const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
   const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || 'https://unfretting-hintingly-susy.ngrok-free.dev/api/auth/callback/google';
+  const baseUrl = new URL(REDIRECT_URI).origin;
+
+  if (!code) {
+    return NextResponse.redirect(new URL('/login?error=NoCode', baseUrl));
+  }
 
   try {
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
@@ -32,7 +33,7 @@ export async function GET(request: Request) {
     
     if (!tokenData.access_token) {
       console.error('Google token exchange failed:', tokenData);
-      return NextResponse.redirect(new URL('/login?error=TokenFailed', request.url));
+      return NextResponse.redirect(new URL('/login?error=TokenFailed', baseUrl));
     }
 
     const userResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
@@ -44,7 +45,7 @@ export async function GET(request: Request) {
 
     // Strict access control: only najwanoctavian@gmail.com is allowed
     if (!email || email !== 'najwanoctavian@gmail.com') {
-      return NextResponse.redirect(new URL('/login?error=UnauthorizedEmail', request.url));
+      return NextResponse.redirect(new URL('/login?error=UnauthorizedEmail', baseUrl));
     }
 
     // Map this specific user to the admin account
@@ -52,7 +53,7 @@ export async function GET(request: Request) {
     const user = result.rows[0];
 
     if (!user) {
-      return NextResponse.redirect(new URL('/login?error=AdminUserNotFound', request.url));
+      return NextResponse.redirect(new URL('/login?error=AdminUserNotFound', baseUrl));
     }
 
     const csrfToken = generateCsrfToken();
@@ -68,14 +69,14 @@ export async function GET(request: Request) {
     }), {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'lax',
       path: '/',
       maxAge: 60 * 60 * 8,
     });
 
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    return NextResponse.redirect(new URL('/', baseUrl));
   } catch (error) {
     console.error('SSO Error:', error);
-    return NextResponse.redirect(new URL('/login?error=ServerError', request.url));
+    return NextResponse.redirect(new URL('/login?error=ServerError', baseUrl));
   }
 }

@@ -30,14 +30,18 @@ export default function StudentProfileMenu({ name }: StudentProfileMenuProps) {
         type="button"
         aria-label="Open profile menu"
         onClick={() => setOpen((prev) => !prev)}
-        className="focus-ring hidden min-h-11 items-center gap-3 rounded-sm border border-outline-variant bg-surface-container-high px-3 py-2 md:flex"
+        className="hidden min-h-10 items-center gap-3 rounded-lg px-3 py-2 transition-colors md:flex"
+        style={{
+          background: 'rgba(74,68,102,0.07)',
+          border: '1px solid #c8dfc9',
+        }}
       >
         <UserAvatar name={name} />
         <div className="min-w-0 text-left">
-          <div className="truncate font-body text-body-sm text-on-surface">{name}</div>
-          <div className="text-label-caps text-on-surface-variant">Student</div>
+          <div className="truncate text-sm font-medium" style={{ color: '#4A4466' }}>{name}</div>
+          <div className="font-mono text-[11px] uppercase tracking-wide" style={{ color: 'rgba(74,68,102,0.55)' }}>Student</div>
         </div>
-        <Icon name={open ? 'expand_less' : 'expand_more'} className="text-on-surface-variant" />
+        <Icon name={open ? 'expand_less' : 'expand_more'} style={{ color: 'rgba(74,68,102,0.55)' }} />
       </button>
 
       <button
@@ -50,12 +54,22 @@ export default function StudentProfileMenu({ name }: StudentProfileMenuProps) {
       </button>
 
       {open ? (
-        <div className="absolute right-0 top-[calc(100%+8px)] z-50 min-w-44 rounded-lg border border-outline-variant bg-surface-container-highest p-1 shadow-2xl shadow-black/40">
+        <div
+          className="absolute right-0 top-[calc(100%+8px)] z-50 min-w-44 rounded-lg p-1"
+          style={{
+            background: '#f9fce8',
+            border: '1px solid #c8dfc9',
+            boxShadow: '0 8px 32px rgba(74,68,102,0.15)',
+          }}
+        >
           <button
             type="button"
             onClick={handleLogout}
             disabled={isPending}
-            className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-left font-code text-code-md text-on-surface transition-colors hover:bg-surface-bright disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left font-mono text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+            style={{ color: '#4A4466' }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(74,68,102,0.07)'; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
           >
             <Icon name="logout" className="text-[18px]" />
             {isPending ? 'Logging out...' : 'Logout'}

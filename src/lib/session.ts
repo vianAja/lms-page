@@ -42,8 +42,8 @@ export async function requireAdminSession() {
 
 export async function requireStudentSession() {
   const session = await requireSession();
-  if (session.role !== 'student') {
-    redirect('/dashboard');
+  if (session.role !== 'student' && session.role !== 'admin') {
+    redirect('/login');
   }
   return session;
 }
