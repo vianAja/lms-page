@@ -9,8 +9,9 @@ export async function GET(request: Request) {
   
   const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
   const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-  const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || 'https://unfretting-hintingly-susy.ngrok-free.dev/api/auth/callback/google';
-  const baseUrl = new URL(REDIRECT_URI).origin;
+  const reqUrl = new URL(request.url);
+  const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || `${reqUrl.origin}/api/auth/callback/google`;
+  const baseUrl = reqUrl.origin;
 
   if (!code) {
     return NextResponse.redirect(new URL('/login?error=NoCode', baseUrl));

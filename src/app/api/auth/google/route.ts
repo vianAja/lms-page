@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-  const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || 'https://unfretting-hintingly-susy.ngrok-free.dev/api/auth/callback/google';
+  const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || `${req.nextUrl.origin}/api/auth/callback/google`;
 
   if (!GOOGLE_CLIENT_ID) {
     return NextResponse.json({ error: 'Missing GOOGLE_CLIENT_ID in environment variables' }, { status: 500 });
