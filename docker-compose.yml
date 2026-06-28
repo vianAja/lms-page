@@ -1,9 +1,24 @@
 services:
+  db:
+    image: postgres:15-alpine
+    container_name: lms-db
+    restart: unless-stopped
+    env_file:
+      - .env
+    network_mode: "host"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
   app:
     build: .
     container_name: lms-app
     network_mode: "host"
+    depends_on:
+      - db
     env_file:
       - .env
     environment:
       - NODE_ENV=production
+
+volumes:
+  pgdata:
