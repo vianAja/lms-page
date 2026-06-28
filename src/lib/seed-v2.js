@@ -37,22 +37,28 @@ async function seedV2() {
     }
     console.log('Lab access permissions successfully seeded.');
 
-    // 3. Create active lab sessions for student 'vian' for all labs (so WebTerminal works)
+    // 3. Create active lab sessions for ALL users for all labs (so WebTerminal works)
     const { encrypt } = require('./crypto');
     const encryptedPass = encrypt('admin123');
 
-    for (const key of labKeys) {
-      await client.query(`
-        INSERT INTO lab_sessions (lab_id, app_user, ssh_host, ssh_user, ssh_pass, ssh_port)
-        VALUES ($1, 'vian', 'host.docker.internal', 'lmsuser', $2, 22)
-        ON CONFLICT (lab_id, app_user) DO UPDATE SET
-          ssh_host = EXCLUDED.ssh_host,
-          ssh_user = EXCLUDED.ssh_user,
-          ssh_pass = EXCLUDED.ssh_pass,
-          ssh_port = EXCLUDED.ssh_port;
-      `, [key, encryptedPass]);
+    // Get all usernames from the users table
+    const usersResult = await client.query('SELECT username FROM users');
+    const allUsers = usersResult.rows.map(r => r.username);
+
+    for (const appUser of allUsers) {
+      for (const key of labKeys) {
+        await client.query(`
+          INSERT INTO lab_sessions (lab_id, app_user, ssh_host, ssh_user, ssh_pass, ssh_port)
+          VALUES ($1, $2, 'host.docker.internal', 'lmsuser', $3, 22)
+          ON CONFLICT (lab_id, app_user) DO UPDATE SET
+            ssh_host = EXCLUDED.ssh_host,
+            ssh_user = EXCLUDED.ssh_user,
+            ssh_pass = EXCLUDED.ssh_pass,
+            ssh_port = EXCLUDED.ssh_port;
+        `, [key, appUser, encryptedPass]);
+      }
     }
-    console.log('Lab SSH proxy sessions initialized successfully.');
+    console.log(`Lab SSH proxy sessions initialized for users: ${allUsers.join(', ')}`);
 
   } catch (err) {
     console.error('Error during V2 seeding:', err);
