@@ -57,16 +57,26 @@ app.prepare().then(() => {
     socket.on('init-ssh', async ({ labId, appUser }) => {
       try {
         const candidates = buildLabIdCandidates(labId);
-        console.log(`[SSH] init-ssh requested: labId=${labId} appUser=${appUser} candidates=${JSON.stringify(candidates)}`);
+        const requestedUser = String(appUser || '').trim() || 'guest';
+        console.log(`[SSH] init-ssh requested: labId=${labId} appUser=${requestedUser} candidates=${JSON.stringify(candidates)}`);
 
-        const result = await db.query(
+        let result = await db.query(
           'SELECT * FROM lab_sessions WHERE lab_id = ANY($1) AND app_user = $2 LIMIT 1',
-          [candidates, appUser]
+          [candidates, requestedUser]
         );
-        const lab = result.rows[0];
+        let lab = result.rows[0];
 
         if (!lab) {
-          console.warn(`[SSH] No session found in DB for labId=${labId} appUser=${appUser}`);
+          console.log(`[SSH] No exact session found for ${requestedUser}, falling back to any lab session for ${labId}`);
+          result = await db.query(
+            'SELECT * FROM lab_sessions WHERE lab_id = ANY($1) ORDER BY app_user ASC LIMIT 1',
+            [candidates]
+          );
+          lab = result.rows[0];
+        }
+
+        if (!lab) {
+          console.warn(`[SSH] No session found in DB for labId=${labId} appUser=${requestedUser}`);
           socket.emit('ssh-error', `Lab session not found for ${labId}`);
           return;
         }

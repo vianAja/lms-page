@@ -21,7 +21,12 @@ export function middleware(request: NextRequest) {
   const sessionCookie = request.cookies.get('user_session');
   
   // Public paths
-  if (request.nextUrl.pathname === '/login' || request.nextUrl.pathname.startsWith('/api/auth')) {
+  if (
+    request.nextUrl.pathname === '/' ||
+    request.nextUrl.pathname.startsWith('/lab') ||
+    request.nextUrl.pathname.startsWith('/login') ||
+    request.nextUrl.pathname.startsWith('/api/auth')
+  ) {
     return NextResponse.next();
   }
 

@@ -1,4 +1,3 @@
-![1782625618118](image/docker-1/1782625618118.png)![1782625618118](image/docker-1/1782625618118.png)![1782625618118](image/docker-1/1782625618118.png)
 
 # Lab Docker 1 — Menjalankan Container nginx:latest
 

@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { requireStudentSession } from '@/lib/session';
+import { getSession } from '@/lib/session';
 import HomeClient from '@/components/HomeClient';
 
 type Lab = {
@@ -18,9 +18,11 @@ type Topic = {
 };
 
 export default async function HomePage() {
-  const session = await requireStudentSession();
-  const displayName = session.fullname || session.username || 'Student';
-  const isAdmin = session.role === 'admin';
+  const session = await getSession();
+  const isGuest = !session?.username;
+  const displayName = session?.fullname || session?.username || 'Guest';
+  const isAdmin = session?.role === 'admin';
+  const isSignedIn = Boolean(session?.username);
 
   const labsResult = await db.query<{
     lab_key: string;
@@ -34,10 +36,11 @@ export default async function HomePage() {
       FROM labs ORDER BY topic_key ASC, order_num ASC`);
 
   let accessKeys = new Set<string>();
-  if (!isAdmin) {
+  if (isSignedIn && !isAdmin) {
+    const username = session?.username || '';
     const accessResult = await db.query<{ lab_key: string }>(
       `SELECT lab_key FROM lab_access WHERE username = $1 AND has_access = true`,
-      [session.username]
+      [username]
     );
     accessKeys = new Set(accessResult.rows.map((r: { lab_key: string }) => r.lab_key));
   }
@@ -57,7 +60,7 @@ export default async function HomePage() {
       description: lab.description,
       order_num: lab.order_num,
       icon: lab.icon,
-      has_access: isAdmin || accessKeys.has(lab.lab_key),
+      has_access: isGuest ? true : Boolean(isAdmin || accessKeys.has(lab.lab_key)),
     });
   }
   const topics = Array.from(topicMap.values());
@@ -66,7 +69,7 @@ export default async function HomePage() {
     <HomeClient
       topics={topics}
       displayName={displayName}
-      isAdmin={isAdmin}
+      isGuest={isGuest}
     />
   );
 }

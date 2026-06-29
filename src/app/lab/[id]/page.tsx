@@ -2,7 +2,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import Link from 'next/link';
 import { db } from '@/lib/db';
-import { requireSession } from '@/lib/session';
+import { getSession } from '@/lib/session';
 import { StudentFrame } from '@/components/AppFrame';
 import { EmptyState } from '@/components/vn-ui';
 import MarkdownViewer from '@/components/MarkdownViewer';
@@ -14,10 +14,10 @@ const { LAB_ALLOWLIST } = require('@/lib/lab-allowlist') as {
 
 export default async function LabPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: labKey } = await params;
-  const session = await requireSession();
+  const session = await getSession();
 
-  // Access control for students only
-  if (session.role === 'student') {
+  // Access control for signed-in students only; guests can browse and connect freely.
+  if (session?.role === 'student') {
     const accessResult = await db.query(
       `SELECT 1 FROM lab_access WHERE username = $1 AND lab_key = $2 AND has_access = true LIMIT 1`,
       [session.username, labKey]

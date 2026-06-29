@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { io, Socket } from 'socket.io-client';
@@ -69,6 +69,7 @@ export default function WebTerminal({
   onStatusChange,
   allowlist,
 }: WebTerminalProps) {
+  const effectiveUsername = username || 'guest';
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<Terminal | null>(null);
   const socketRef = useRef<Socket | null>(null);
@@ -169,7 +170,7 @@ export default function WebTerminal({
         reconnectAttemptRef.current = 0;
         setAttempt(0);
         setStatus('connecting');
-        socket.emit('init-ssh', { labId: currentLabId.current, appUser: username });
+        socket.emit('init-ssh', { labId: currentLabId.current, appUser: effectiveUsername });
       });
 
       socket.on('ssh-ready', () => {
@@ -286,15 +287,15 @@ export default function WebTerminal({
       connectSocketRef.current = null;
       term.dispose();
     };
-  }, [username]); // Only remount if username changes! Removed labId to persist across labs.
+  }, [effectiveUsername]); // Only remount if username changes! Removed labId to persist across labs.
 
-  const handleConnectVm = () => {
+  const handleConnectVm = useCallback(() => {
     if (status === 'connected' || status === 'connecting' || status === 'reconnecting') return;
     setElapsedSeconds(0);
     connectSocketRef.current?.();
-  };
+  }, [status]);
 
-  const handleStopVm = () => {
+  const handleStopVm = useCallback(() => {
     reconnectAttemptRef.current = 0;
     setAttempt(0);
     if (reconnectTimerRef.current) {
@@ -307,19 +308,23 @@ export default function WebTerminal({
     setElapsedSeconds(0);
     setStatus('idle');
     xtermRef.current?.write('\r\n\x1b[33m[Session closed]\x1b[0m\r\n');
-  };
+  }, []);
 
   useEffect(() => {
     if (connectSignal <= 0) return;
-    handleConnectVm();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [connectSignal]);
+    const timeout = window.setTimeout(() => {
+      handleConnectVm();
+    }, 0);
+    return () => window.clearTimeout(timeout);
+  }, [connectSignal, handleConnectVm]);
 
   useEffect(() => {
     if (disconnectSignal <= 0) return;
-    handleStopVm();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [disconnectSignal]);
+    const timeout = window.setTimeout(() => {
+      handleStopVm();
+    }, 0);
+    return () => window.clearTimeout(timeout);
+  }, [disconnectSignal, handleStopVm]);
 
   // Status indicator colors
   const dotColor =
