@@ -112,34 +112,34 @@ export default function WebTerminal({
     if (!terminalRef.current) return;
     isUnmountedRef.current = false;
 
-    // Initialize Terminal — palette-matched theme
+    // Initialize Terminal — Utilitarian Clarity theme
     const term = new Terminal({
       cursorBlink: true,
       fontSize: 13,
       fontFamily: '"JetBrains Mono", monospace',
       lineHeight: 1.5,
       theme: {
-        background: '#0d0d14',
-        foreground: '#F1F7D4',
-        cursor: '#6EADBC',
-        cursorAccent: '#0d0d14',
-        selectionBackground: 'rgba(110, 173, 188, 0.28)',
-        black: '#1e1d2e',
-        red: '#b04040',
-        green: '#9FCBAD',
-        yellow: '#e8c86a',
-        blue: '#6EADBC',
-        magenta: '#8a7fc0',
-        cyan: '#6EADBC',
-        white: '#F1F7D4',
-        brightBlack: '#4A4466',
-        brightRed: '#d46060',
-        brightGreen: '#b8dfc4',
-        brightYellow: '#f0d880',
-        brightBlue: '#88c8d8',
-        brightMagenta: '#a89ed8',
-        brightCyan: '#88c8d8',
-        brightWhite: '#ffffff',
+        background: '#0A120A',
+        foreground: '#D4EDDA',
+        cursor: '#2E8B57',
+        cursorAccent: '#0A120A',
+        selectionBackground: 'rgba(46, 139, 87, 0.3)',
+        black: '#0A120A',
+        red: '#DC2626',
+        green: '#2E8B57',
+        yellow: '#D97706',
+        blue: '#2563EB',
+        magenta: '#9333EA',
+        cyan: '#0891B2',
+        white: '#D4EDDA',
+        brightBlack: '#374151',
+        brightRed: '#EF4444',
+        brightGreen: '#4ADE80',
+        brightYellow: '#F59E0B',
+        brightBlue: '#3B82F6',
+        brightMagenta: '#A855F7',
+        brightCyan: '#06B6D4',
+        brightWhite: '#FFFFFF',
       },
     });
     const fitAddon = new FitAddon();
@@ -329,12 +329,12 @@ export default function WebTerminal({
   // Status indicator colors
   const dotColor =
     status === 'connected'
-      ? '#9FCBAD'
+      ? '#2E8B57'
       : status === 'reconnecting'
-        ? '#e8c86a'
+        ? '#D97706'
         : status === 'failed'
-          ? '#b04040'
-          : 'rgba(110,173,188,0.45)';
+          ? '#DC2626'
+          : '#374151';
 
   const statusText =
     status === 'connected'
@@ -353,49 +353,45 @@ export default function WebTerminal({
 
   return (
     <div
-      className="flex h-full w-full flex-col overflow-hidden"
+      className="flex h-full w-full flex-col overflow-hidden rounded-xl"
       style={{
-        borderRadius: '10px',
-        border: '1px solid rgba(0,0,0,0.45)',
-        background: '#0d0d14',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.60), 0 4px 16px rgba(0,0,0,0.40)',
+        border: '1px solid var(--border)',
+        background: 'var(--terminal-bg)',
       }}
     >
-      {/* Mac-style title bar — only dots + status + timer */}
+      {/* Mac-style title bar */}
       <div
-        className="flex h-10 shrink-0 items-center justify-between px-4"
+        className="flex h-11 shrink-0 items-center justify-between px-4"
         style={{
-          background: '#1a1a24',
-          borderBottom: '1px solid rgba(0,0,0,0.40)',
-          borderRadius: '10px 10px 0 0',
+          background: 'var(--sidebar-bg)',
+          borderBottom: '1px solid var(--border-strong)',
         }}
       >
         {/* Left: traffic light dots only */}
-        <div className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-full" style={{ background: '#ff5f56' }} />
-          <span className="h-3 w-3 rounded-full" style={{ background: '#ffbd2e' }} />
-          <span className="h-3 w-3 rounded-full" style={{ background: '#27c93f' }} />
+        <div className="flex items-center gap-2">
+          <span className="h-3 w-3 rounded-full" style={{ background: '#FF5F56' }} />
+          <span className="h-3 w-3 rounded-full" style={{ background: '#FFBD2E' }} />
+          <span className="h-3 w-3 rounded-full" style={{ background: '#27C93F' }} />
         </div>
 
         {/* Right: status dot + text + timer */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 font-mono text-xs" style={{ color: 'rgba(241,247,212,0.70)' }}>
+          <div className="flex items-center gap-2 font-code text-xs font-medium" style={{ color: 'var(--terminal-text)' }}>
             <span
               className="h-2 w-2 rounded-full"
               style={{
                 background: dotColor,
-                boxShadow: status === 'connected' ? `0 0 5px ${dotColor}` : 'none',
+                boxShadow: status === 'connected' ? `0 0 6px ${dotColor}` : 'none',
                 transition: 'background 0.3s',
               }}
             />
             <span>{statusText}</span>
           </div>
           <div
-            className="rounded px-2.5 py-0.5 font-mono tabular-nums text-xs"
+            className="rounded px-2.5 py-1 font-code tabular-nums text-[11px] font-semibold"
             style={{
-              background: 'rgba(241,247,212,0.05)',
-              border: '1px solid rgba(241,247,212,0.09)',
-              color: 'rgba(241,247,212,0.75)',
+              background: 'rgba(255,255,255,0.08)',
+              color: 'var(--terminal-text)',
             }}
           >
             {hours}:{minutes}:{seconds}
