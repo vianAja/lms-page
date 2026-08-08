@@ -43,6 +43,8 @@ export default async function LabPage({ params }: { params: Promise<{ id: string
   let labTitle = `Lab ${labKey}`;
   let nextLabHref: string | null = null;
   let prevLabHref: string | null = null;
+  let currentStep = 1;
+  let totalSteps = 1;
 
   try {
     const dbResult = await db.query(
@@ -71,6 +73,13 @@ export default async function LabPage({ params }: { params: Promise<{ id: string
 
     // Find next lab in same topic
     if (dbLab?.topic_key && typeof dbLab.order_num === 'number') {
+      currentStep = dbLab.order_num;
+      const countResult = await db.query<{ count: string }>(
+        `SELECT COUNT(*) FROM labs WHERE topic_key = $1`,
+        [dbLab.topic_key]
+      );
+      totalSteps = parseInt(countResult.rows[0]?.count || '1', 10);
+
       const nextResult = await db.query<{ lab_key: string }>(
         `SELECT lab_key FROM labs
          WHERE topic_key = $1 AND order_num > $2
@@ -123,6 +132,8 @@ export default async function LabPage({ params }: { params: Promise<{ id: string
           allowlist: LAB_ALLOWLIST[labKey] ?? undefined,
           nextLabHref,
           prevLabHref,
+          currentStep,
+          totalSteps,
         }} 
       />
       <MarkdownViewer content={markdownContent} />

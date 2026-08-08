@@ -81,16 +81,24 @@ app.prepare().then(() => {
           return;
         }
 
-        console.log(`[SSH] Session found: lab_id=${lab.lab_id} ssh_host=${lab.ssh_host} ssh_user=${lab.ssh_user} ssh_port=${lab.ssh_port}`);
+        let dbLabResult = await db.query(
+          'SELECT topic_key FROM labs WHERE lab_key = ANY($1) LIMIT 1',
+          [candidates]
+        );
+        let topicKey = dbLabResult.rows[0]?.topic_key || 'linux';
+        
+        console.log(`[SSH] Resolved topicKey='${topicKey}' for labId='${labId}'`);
+        
+        // Ensure microVM is running
+        const vmm = require('./src/lib/vmm');
+        const vmInfo = await vmm.ensureVmRunning(topicKey);
+        console.log(`[SSH] VM is ready at ${vmInfo.guestIp} (${vmInfo.status})`);
 
-        let sshPass = lab.ssh_pass;
-        try {
-          const { decrypt } = require('./src/lib/crypto');
-          sshPass = decrypt(lab.ssh_pass);
-          console.log('[SSH] Password decrypted successfully.');
-        } catch (e) {
-          console.error('[SSH] Error decrypting ssh_pass, using raw value:', e.message);
-        }
+        // Override connection to point to the microVM
+        const targetHost = vmInfo.guestIp;
+        const targetUser = 'root';
+        const targetPass = 'admin123';
+        const targetPort = 22;
 
       sshClient = new Client();
       sshClient
@@ -116,16 +124,16 @@ app.prepare().then(() => {
           });
         })
         .on('error', (err) => {
-          console.error(`[SSH] Connection error for ${lab.ssh_user}@${lab.ssh_host}: ${err.message}`);
+          console.error(`[SSH] Connection error for ${targetUser}@${targetHost}: ${err.message}`);
           socket.emit('ssh-error', err.message);
         })
         .connect({
-          host: lab.ssh_host,
-          port: lab.ssh_port,
-          username: lab.ssh_user,
-          password: sshPass,
+          host: targetHost,
+          port: targetPort,
+          username: targetUser,
+          password: targetPass,
         });
-        console.log(`[SSH] Connecting to ${lab.ssh_user}@${lab.ssh_host}:${lab.ssh_port}...`);
+        console.log(`[SSH] Connecting to ${targetUser}@${targetHost}:${targetPort}...`);
       } catch (error) {
         console.error('[SSH] Unexpected error in init-ssh handler:', error);
         socket.emit('ssh-error', 'Internal server error');

@@ -34,9 +34,8 @@ export default function LabShellClient({ username, children }: LabShellClientPro
   const [clientMarkdown, setClientMarkdown] = useState<string | null>(null);
   const [isFetchingContent, setIsFetchingContent] = useState(false);
 
-  // Dummy step logic for progress bar
-  const totalSteps = 5;
-  const currentStep = 1;
+  const currentStep = labData?.currentStep || 1;
+  const totalSteps = labData?.totalSteps || 1;
 
   const [connectSignal, setConnectSignal] = useState(0);
   const [disconnectSignal, setDisconnectSignal] = useState(0);
@@ -245,10 +244,10 @@ export default function LabShellClient({ username, children }: LabShellClientPro
             </div>
           </div>
 
-          {/* Center: Progress Bar */}
-          <div className="hidden flex-1 items-center justify-center px-10 md:flex">
-            <div className="flex w-full max-w-sm items-center gap-4">
-              <span className="font-code text-[11px] font-semibold" style={{ color: '#374151', minWidth: '70px' }}>
+          {/* Center: Progress Bar (Absolutely centered, not affected by side widths) */}
+          <div className="hidden absolute inset-0 md:flex items-center justify-center pointer-events-none">
+            <div className="flex w-full max-w-sm items-center gap-4 pointer-events-auto">
+              <span className="font-code text-[11px] font-semibold" style={{ color: '#374151', minWidth: '70px', textAlign: 'right' }}>
                 Step {currentStep} of {totalSteps}
               </span>
               <div className="progress-track flex-1">
@@ -333,22 +332,25 @@ export default function LabShellClient({ username, children }: LabShellClientPro
           <ResizableSplit
             initialLeftWidth={45}
             leftPanel={
-              <div className="flex h-full flex-col rounded-xl border bg-white" style={{ borderColor: 'var(--border)' }}>
-                {/* Content fetch loading indicator */}
-                {isFetchingContent && (
-                  <div className="absolute left-1/2 top-4 z-10 -translate-x-1/2 rounded-full bg-emerald-700 px-4 py-1 text-[12px] font-medium text-white shadow-md">
-                    Loading next lab...
-                  </div>
-                )}
+              <div className="flex h-full flex-col rounded-xl border bg-white relative" style={{ borderColor: 'var(--border)' }}>
                 <div className="flex-1 overflow-y-auto px-6 py-8 md:px-8">
                   {/* Markdown Content */}
-                  <div className="app-prose max-w-none">
+                  <div className={`app-prose max-w-none transition-opacity duration-300 ${isFetchingContent ? 'opacity-30' : 'opacity-100'}`}>
                     {showClientMarkdown ? (
                       <MarkdownViewer content={clientMarkdown} />
                     ) : (
                       children
                     )}
                   </div>
+                  
+                  {isFetchingContent && (
+                    <div className="absolute inset-0 z-10 flex items-center justify-center">
+                      <div className="flex items-center gap-2 rounded-full bg-white px-4 py-2 shadow-sm border" style={{ borderColor: 'var(--border)' }}>
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-gray-200 border-t-emerald-600" />
+                        <span className="font-code text-xs text-gray-500">Loading lab content...</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             }

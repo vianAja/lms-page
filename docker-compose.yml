@@ -23,6 +23,8 @@ services:
       - .env
     environment:
       - NODE_ENV=production
+    volumes:
+      - /home/vian/.ssh/id_rsa:/app/id_rsa:ro
 
 volumes:
   pgdata:

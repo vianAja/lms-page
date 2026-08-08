@@ -31,6 +31,8 @@ export async function GET(
   let topicKey = '';
   let nextLabHref: string | null = null;
   let prevLabHref: string | null = null;
+  let currentStep = 1;
+  let totalSteps = 1;
 
   try {
     const dbResult = await db.query(
@@ -56,6 +58,13 @@ export async function GET(
     }
 
     if (dbLab?.topic_key && typeof dbLab.order_num === 'number') {
+      currentStep = dbLab.order_num;
+      const countResult = await db.query<{ count: string }>(
+        `SELECT COUNT(*) FROM labs WHERE topic_key = $1`,
+        [dbLab.topic_key]
+      );
+      totalSteps = parseInt(countResult.rows[0]?.count || '1', 10);
+
       const nextResult = await db.query<{ lab_key: string }>(
         `SELECT lab_key FROM labs WHERE topic_key = $1 AND order_num > $2 ORDER BY order_num ASC LIMIT 1`,
         [dbLab.topic_key, dbLab.order_num]
@@ -91,5 +100,7 @@ export async function GET(
     allowlist: LAB_ALLOWLIST[labKey] ?? null,
     nextLabHref,
     prevLabHref,
+    currentStep,
+    totalSteps,
   });
 }

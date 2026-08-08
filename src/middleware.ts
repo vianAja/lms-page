@@ -25,6 +25,7 @@ export function middleware(request: NextRequest) {
     request.nextUrl.pathname === '/' ||
     request.nextUrl.pathname.startsWith('/lab') ||
     request.nextUrl.pathname.startsWith('/api/lab-content') ||
+    request.nextUrl.pathname.startsWith('/api/vmm') ||
     request.nextUrl.pathname.startsWith('/login') ||
     request.nextUrl.pathname.startsWith('/api/auth')
   ) {

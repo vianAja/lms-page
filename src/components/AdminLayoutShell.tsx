@@ -20,6 +20,7 @@ const navItems = [
   { href: '/dashboard/manage-student', label: 'Student Management', icon: 'manage_accounts' },
   { href: '/dashboard/classes', label: 'Classes & Labs', icon: 'school', countKey: 'labs' as const },
   { href: '/dashboard/users', label: 'User Management', icon: 'group', countKey: 'users' as const },
+  { href: '/dashboard/vms', label: 'VM Monitor', icon: 'memory' },
 ];
 
 function Sidebar({

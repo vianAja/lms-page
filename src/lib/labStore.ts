@@ -8,6 +8,8 @@ export type LabData = {
   allowlist?: { exactCommands: string[] };
   nextLabHref: string | null;
   prevLabHref: string | null;
+  currentStep?: number;
+  totalSteps?: number;
 };
 
 interface LabStore {

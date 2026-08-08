@@ -32,7 +32,7 @@ export default function MarkdownViewer({ content }: MarkdownViewerProps) {
             );
           },
           pre: ({ children }) => (
-            <div className="group relative my-5 overflow-hidden rounded-xl border border-gray-800 bg-[#1E293B] shadow-sm">
+            <div className="group relative my-5">
               <button
                 type="button"
                 aria-label="Copy code snippet"
@@ -47,7 +47,7 @@ export default function MarkdownViewer({ content }: MarkdownViewerProps) {
               >
                 <Icon name="content_copy" className="text-[15px]" />
               </button>
-              <pre className="overflow-x-auto p-4 font-code text-[13px] text-slate-100 bg-[#1E293B] [&>code]:bg-transparent [&>code]:border-0 [&>code]:p-0 [&>code]:text-slate-100">{children}</pre>
+              <pre className="!m-0 overflow-x-auto p-4 font-code text-[13px]">{children}</pre>
             </div>
           ),
         }}
