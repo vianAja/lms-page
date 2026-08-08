@@ -1,46 +1,34 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import Link from 'next/link';
+import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getSession } from '@/lib/session';
-import { StudentFrame } from '@/components/AppFrame';
-import { EmptyState } from '@/components/vn-ui';
-import MarkdownViewer from '@/components/MarkdownViewer';
-import LabStateUpdater from '@/components/LabStateUpdater';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { LAB_ALLOWLIST } = require('@/lib/lab-allowlist') as {
   LAB_ALLOWLIST: Record<string, { exactCommands: string[] }>;
 };
 
-export default async function LabPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id: labKey } = await params;
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ labKey: string }> }
+) {
+  const { labKey } = await params;
   const session = await getSession();
 
-  // Access control for signed-in students only; guests can browse and connect freely.
+  // Access guard for students
   if (session?.role === 'student') {
     const accessResult = await db.query(
       `SELECT 1 FROM lab_access WHERE username = $1 AND lab_key = $2 AND has_access = true LIMIT 1`,
       [session.username, labKey]
     );
-
     if (!accessResult.rowCount) {
-      return (
-        <StudentFrame name={session.fullname || session.username || 'Student'}>
-          <div className="mx-auto flex min-h-[calc(100dvh-4rem)] max-w-[1440px] items-center justify-center px-4 py-10">
-            <EmptyState
-              icon="lock"
-              title="Access Restricted"
-              copy="You do not have permission to open this lab environment."
-              cta={<Link href="/" className="button-primary">Go to Home</Link>}
-            />
-          </div>
-        </StudentFrame>
-      );
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
   }
 
   let markdownContent = '';
   let labTitle = `Lab ${labKey}`;
+  let topicKey = '';
   let nextLabHref: string | null = null;
   let prevLabHref: string | null = null;
 
@@ -51,14 +39,12 @@ export default async function LabPage({ params }: { params: Promise<{ id: string
     );
     const dbLab = dbResult.rows[0];
 
-    if (dbLab?.title) {
-      labTitle = dbLab.title;
-    }
+    if (dbLab?.title) labTitle = dbLab.title;
+    if (dbLab?.topic_key) topicKey = dbLab.topic_key;
 
     if (dbLab?.content && dbLab.content.trim().length > 0) {
       markdownContent = dbLab.content;
     } else {
-      // Fall back to md file
       try {
         markdownContent = await fs.readFile(
           path.join(process.cwd(), 'page', `${labKey}.md`),
@@ -69,23 +55,17 @@ export default async function LabPage({ params }: { params: Promise<{ id: string
       }
     }
 
-    // Find next lab in same topic
     if (dbLab?.topic_key && typeof dbLab.order_num === 'number') {
       const nextResult = await db.query<{ lab_key: string }>(
-        `SELECT lab_key FROM labs
-         WHERE topic_key = $1 AND order_num > $2
-         ORDER BY order_num ASC LIMIT 1`,
+        `SELECT lab_key FROM labs WHERE topic_key = $1 AND order_num > $2 ORDER BY order_num ASC LIMIT 1`,
         [dbLab.topic_key, dbLab.order_num]
       );
       if (nextResult.rows[0]?.lab_key) {
         nextLabHref = `/lab/${nextResult.rows[0].lab_key}`;
       }
 
-      // Find previous lab in same topic
       const prevResult = await db.query<{ lab_key: string }>(
-        `SELECT lab_key FROM labs
-         WHERE topic_key = $1 AND order_num < $2
-         ORDER BY order_num DESC LIMIT 1`,
+        `SELECT lab_key FROM labs WHERE topic_key = $1 AND order_num < $2 ORDER BY order_num DESC LIMIT 1`,
         [dbLab.topic_key, dbLab.order_num]
       );
       if (prevResult.rows[0]?.lab_key) {
@@ -103,29 +83,13 @@ export default async function LabPage({ params }: { params: Promise<{ id: string
     }
   }
 
-  let topicKey = '';
-  try {
-    const tResult = await db.query<{ topic_key: string }>(
-      'SELECT topic_key FROM labs WHERE lab_key = $1 LIMIT 1',
-      [labKey]
-    );
-    topicKey = tResult.rows[0]?.topic_key || '';
-  } catch { /* ignore */ }
-
-  return (
-    <>
-      <LabStateUpdater 
-        data={{
-          labId: labKey,
-          labTitle,
-          topicKey,
-          markdownContent,
-          allowlist: LAB_ALLOWLIST[labKey] ?? undefined,
-          nextLabHref,
-          prevLabHref,
-        }} 
-      />
-      <MarkdownViewer content={markdownContent} />
-    </>
-  );
+  return NextResponse.json({
+    labId: labKey,
+    labTitle,
+    topicKey,
+    markdownContent,
+    allowlist: LAB_ALLOWLIST[labKey] ?? null,
+    nextLabHref,
+    prevLabHref,
+  });
 }

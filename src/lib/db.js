@@ -12,14 +12,6 @@ pool.on('error', (err) => {
   console.error('Unexpected error on idle client', err);
 });
 
-// Test connection
-pool.connect((err, client, release) => {
-  if (err) {
-    return console.error('Error acquiring client', err.stack);
-  }
-  console.log('Successfully connected to PostgreSQL');
-  release();
-});
 
 // For CommonJS compatibility (server.js, seed.js)
 module.exports = pool;

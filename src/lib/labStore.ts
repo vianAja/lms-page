@@ -3,6 +3,8 @@ import { create } from 'zustand';
 export type LabData = {
   labId: string;
   labTitle: string;
+  topicKey?: string;
+  markdownContent?: string;
   allowlist?: { exactCommands: string[] };
   nextLabHref: string | null;
   prevLabHref: string | null;

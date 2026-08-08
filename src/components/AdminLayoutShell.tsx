@@ -17,10 +17,9 @@ type AdminLayoutShellProps = {
 
 const navItems = [
   { href: '/dashboard', label: 'Overview', icon: 'dashboard' },
-  { href: '/dashboard/users', label: 'Users', icon: 'group', countKey: 'users' as const },
-  { href: '/dashboard/classes', label: 'Classez', icon: 'school' },
-  { href: '/dashboard/labs', label: 'Labs', icon: 'science', countKey: 'labs' as const },
-  { href: '/dashboard/sessions', label: 'Sessions', icon: 'receipt_long' },
+  { href: '/dashboard/manage-student', label: 'Student Management', icon: 'manage_accounts' },
+  { href: '/dashboard/classes', label: 'Classes & Labs', icon: 'school', countKey: 'labs' as const },
+  { href: '/dashboard/users', label: 'User Management', icon: 'group', countKey: 'users' as const },
 ];
 
 function Sidebar({

@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import ResizableSplit from '@/components/ResizableSplit';
 import WebTerminal from '@/components/WebTerminal';
+import MarkdownViewer from '@/components/MarkdownViewer';
 import { useLabStore } from '@/lib/labStore';
 import { Icon } from '@/components/vn-ui';
 
@@ -18,25 +19,30 @@ type TerminalStatus = 'idle' | 'connecting' | 'connected' | 'reconnecting' | 'fa
 const SESSION_LIMIT_SECONDS = 15 * 60; // 15 minutes
 
 export default function LabShellClient({ username, children }: LabShellClientProps) {
-  const router = useRouter();
   const pathname = usePathname();
   const labData = useLabStore((state) => state.labData);
+  const setLabData = useLabStore((state) => state.setLabData);
 
   const labId = labData?.labId || '';
   const labTitle = labData?.labTitle || '';
+  const topicKey = labData?.topicKey || '';
   const allowlist = labData?.allowlist;
   const nextLabHref = labData?.nextLabHref || null;
   const prevLabHref = labData?.prevLabHref || null;
-  
+
+  // Client-side markdown content (overrides server children after navigation)
+  const [clientMarkdown, setClientMarkdown] = useState<string | null>(null);
+  const [isFetchingContent, setIsFetchingContent] = useState(false);
+
   // Dummy step logic for progress bar
   const totalSteps = 5;
-  const currentStep = 1; 
+  const currentStep = 1;
 
   const [connectSignal, setConnectSignal] = useState(0);
   const [disconnectSignal, setDisconnectSignal] = useState(0);
   const [terminalStatus, setTerminalStatus] = useState<TerminalStatus>('idle');
   const [connectionElapsedMs, setConnectionElapsedMs] = useState(0);
-  
+
   const connectionTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const connectionStartedAtRef = useRef<number | null>(null);
 
@@ -44,11 +50,20 @@ export default function LabShellClient({ username, children }: LabShellClientPro
   const sessionTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [sessionRemaining, setSessionRemaining] = useState(SESSION_LIMIT_SECONDS);
 
-  // Next lab transition animation
-  const [pendingNavigationHref, setPendingNavigationHref] = useState<string | null>(null);
-  const isNavigating = pendingNavigationHref !== null && pendingNavigationHref !== pathname;
+  // When labData is first set, rewrite the URL to /{topicKey}-labs (no reload)
+  // This keeps the URL stable across lab navigation
+  useEffect(() => {
+    if (!topicKey) return;
+    const staticSlug = `/${topicKey}-labs`;
+    if (typeof window !== 'undefined' && window.location.pathname !== staticSlug) {
+      window.history.replaceState({}, '', staticSlug);
+    }
+  }, [topicKey]);
 
-  const isRunning = terminalStatus === 'connected' || terminalStatus === 'connecting' || terminalStatus === 'reconnecting';
+  // Reset client markdown when the server-side page changes (first load per route)
+  useEffect(() => {
+    setClientMarkdown(null);
+  }, [pathname]);
 
   // Cleanup timers on unmount
   useEffect(() => {
@@ -65,7 +80,7 @@ export default function LabShellClient({ username, children }: LabShellClientPro
       connectionStartedAtRef.current = Date.now();
       setConnectionElapsedMs(0);
       if (connectionTimerRef.current) clearInterval(connectionTimerRef.current);
-      
+
       connectionTimerRef.current = setInterval(() => {
         if (connectionStartedAtRef.current !== null) {
           setConnectionElapsedMs(Date.now() - connectionStartedAtRef.current);
@@ -84,7 +99,7 @@ export default function LabShellClient({ username, children }: LabShellClientPro
     if (status === 'connected') {
       setSessionRemaining(SESSION_LIMIT_SECONDS);
       if (sessionTimerRef.current) clearInterval(sessionTimerRef.current);
-      
+
       sessionTimerRef.current = setInterval(() => {
         setSessionRemaining((prev) => {
           if (prev <= 1) {
@@ -116,32 +131,58 @@ export default function LabShellClient({ username, children }: LabShellClientPro
     setConnectSignal((v) => v + 1);
   };
 
+  /**
+   * Fetch new lab content from API without changing URL.
+   * Terminal remains connected — only the left markdown panel updates.
+   */
+  const fetchLabContent = useCallback(async (labKey: string) => {
+    setIsFetchingContent(true);
+    try {
+      const res = await fetch(`/api/lab-content/${labKey}`);
+      if (!res.ok) throw new Error('Failed to fetch lab content');
+      const data = await res.json();
+      // Update store (labId, title, next/prev hrefs, allowlist)
+      setLabData({
+        labId: data.labId,
+        labTitle: data.labTitle,
+        topicKey: data.topicKey || topicKey,
+        markdownContent: data.markdownContent,
+        allowlist: data.allowlist ?? undefined,
+        nextLabHref: data.nextLabHref,
+        prevLabHref: data.prevLabHref,
+      });
+      setClientMarkdown(data.markdownContent);
+    } catch (err) {
+      console.error('Lab content fetch failed:', err);
+    } finally {
+      setIsFetchingContent(false);
+    }
+  }, [setLabData, topicKey]);
+
   const handleNextLab = () => {
     if (!nextLabHref) return;
-    setPendingNavigationHref(nextLabHref);
-    router.push(nextLabHref);
+    // Extract lab key from href e.g. /lab/docker-lab-2 -> docker-lab-2
+    const nextLabKey = nextLabHref.replace('/lab/', '');
+    fetchLabContent(nextLabKey);
   };
 
+  const handlePrevLab = () => {
+    if (!prevLabHref) return;
+    const prevLabKey = prevLabHref.replace('/lab/', '');
+    fetchLabContent(prevLabKey);
+  };
+
+  const isRunning = terminalStatus === 'connected' || terminalStatus === 'connecting' || terminalStatus === 'reconnecting';
   const sMin = String(Math.floor(sessionRemaining / 60)).padStart(2, '0');
   const sSec = String(sessionRemaining % 60).padStart(2, '0');
   const sessionWarning = sessionRemaining <= 120 && terminalStatus === 'connected';
   const connectionElapsedText = `${(connectionElapsedMs / 1000).toFixed(connectionElapsedMs < 1000 ? 1 : 0)}s`;
 
+  // Determine what markdown to show: client-fetched takes priority over server-rendered children
+  const showClientMarkdown = clientMarkdown !== null;
+
   return (
     <>
-      {/* Page-level transition overlay */}
-      {isNavigating && (
-        <div
-          className="fixed inset-0 z-[999] flex items-center justify-center"
-          style={{ background: 'var(--bg)' }}
-        >
-          <div className="flex flex-col items-center gap-4">
-            <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-green-500" />
-            <span className="font-code text-sm font-medium" style={{ color: '#6B7280' }}>Loading next lab...</span>
-          </div>
-        </div>
-      )}
-
       {/* Start-lab loading overlay - Tied to real connection status */}
       {(terminalStatus === 'connecting' || terminalStatus === 'reconnecting') && (
         <div
@@ -161,14 +202,12 @@ export default function LabShellClient({ username, children }: LabShellClientPro
               <div className="font-code text-[13px] font-semibold uppercase tracking-widest text-gray-900">
                 Setting Up Environment
               </div>
-
               <div className="progress-track">
                 <div
                   className="progress-fill opacity-80"
                   style={{ animation: 'pulse 1.5s infinite', width: '100%' }}
                 />
               </div>
-
               <div className="flex min-h-[32px] items-center justify-center px-4 font-code text-[11px] text-gray-500">
                 Connecting to instance · {connectionElapsedText}
               </div>
@@ -247,30 +286,45 @@ export default function LabShellClient({ username, children }: LabShellClientPro
                 opacity: (terminalStatus === 'connecting' || terminalStatus === 'reconnecting') ? 0.7 : 1,
               }}
             >
-              {(terminalStatus === 'connecting' || terminalStatus === 'reconnecting') 
-                ? 'Starting...' 
+              {(terminalStatus === 'connecting' || terminalStatus === 'reconnecting')
+                ? 'Starting...'
                 : isRunning ? 'Stop Lab' : 'Start Lab'}
             </button>
 
-            {nextLabHref ? (
+            {/* Prev Lab Button */}
+            {prevLabHref && (
               <button
-                onClick={handleNextLab}
+                onClick={handlePrevLab}
+                disabled={isFetchingContent}
                 className="btn-secondary flex items-center gap-1"
                 style={{ fontSize: '13px', padding: '6px 14px' }}
               >
-                Next
-                <Icon name="arrow_forward" className="text-[14px]" />
-              </button>
-            ) : (
-              <button
-                disabled
-                className="btn-secondary flex items-center gap-1 opacity-50 cursor-not-allowed"
-                style={{ fontSize: '13px', padding: '6px 14px' }}
-              >
-                Next
-                <Icon name="arrow_forward" className="text-[14px]" />
+                <Icon name="arrow_back" className="text-[14px]" />
+                Prev
               </button>
             )}
+
+            {/* Next Lab Button */}
+            <button
+              onClick={handleNextLab}
+              disabled={!nextLabHref || isFetchingContent}
+              className="btn-secondary flex items-center gap-1"
+              style={{
+                fontSize: '13px',
+                padding: '6px 14px',
+                opacity: !nextLabHref ? 0.4 : 1,
+                cursor: !nextLabHref ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {isFetchingContent ? (
+                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-gray-400 border-t-gray-700" />
+              ) : (
+                <>
+                  Next
+                  <Icon name="arrow_forward" className="text-[14px]" />
+                </>
+              )}
+            </button>
           </div>
         </header>
 
@@ -280,10 +334,20 @@ export default function LabShellClient({ username, children }: LabShellClientPro
             initialLeftWidth={45}
             leftPanel={
               <div className="flex h-full flex-col rounded-xl border bg-white" style={{ borderColor: 'var(--border)' }}>
+                {/* Content fetch loading indicator */}
+                {isFetchingContent && (
+                  <div className="absolute left-1/2 top-4 z-10 -translate-x-1/2 rounded-full bg-emerald-700 px-4 py-1 text-[12px] font-medium text-white shadow-md">
+                    Loading next lab...
+                  </div>
+                )}
                 <div className="flex-1 overflow-y-auto px-6 py-8 md:px-8">
                   {/* Markdown Content */}
                   <div className="app-prose max-w-none">
-                    {children}
+                    {showClientMarkdown ? (
+                      <MarkdownViewer content={clientMarkdown} />
+                    ) : (
+                      children
+                    )}
                   </div>
                 </div>
               </div>

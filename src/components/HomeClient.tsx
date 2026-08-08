@@ -33,6 +33,7 @@ const TOPIC_DETAILS: Record<
     description: string;
     labCount: string;
     icon: string;
+    image?: string;
   }
 > = {
   linux: {
@@ -41,6 +42,7 @@ const TOPIC_DETAILS: Record<
       'Master the command line, manage file systems, configure networking, and understand user permissions.',
     labCount: '12 Labs',
     icon: 'terminal',
+    image: '/images/linux_module.webp',
   },
   docker: {
     displayName: 'Docker Containerization',
@@ -48,6 +50,7 @@ const TOPIC_DETAILS: Record<
       'Learn containerization basics, from writing Dockerfiles to managing multi-container applications.',
     labCount: '10 Labs',
     icon: 'widgets',
+    image: '/images/docker_module.webp',
   },
 };
 
@@ -232,25 +235,35 @@ export default function HomeClient({ topics, displayName, isGuest }: HomeClientP
                   el.style.boxShadow = 'none';
                 }}
               >
-                {/* Large Icon Area */}
+                {/* Large Icon / WebP Image Area */}
                 <div
-                  className="flex items-center justify-center py-14"
+                  className="flex items-center justify-center py-8"
                   style={{
                     background: '#F9FAF9',
                     borderBottom: '1px solid var(--border)',
                     borderRadius: '12px 12px 0 0',
                   }}
                 >
-                  <div
-                    className="flex h-20 w-20 items-center justify-center rounded-2xl"
-                    style={{
-                      background: 'var(--bg-card)',
-                      border: '1.5px solid var(--border-strong)',
-                      color: '#9CA3AF',
-                    }}
-                  >
-                    <Icon name={details.icon} className="text-[36px]" />
-                  </div>
+                  {details.image ? (
+                    <div className="relative h-28 w-28 overflow-hidden rounded-2xl border bg-white p-2 shadow-sm flex items-center justify-center">
+                      <img
+                        src={details.image}
+                        alt={details.displayName}
+                        className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
+                      />
+                    </div>
+                  ) : (
+                    <div
+                      className="flex h-20 w-20 items-center justify-center rounded-2xl"
+                      style={{
+                        background: 'var(--bg-card)',
+                        border: '1.5px solid var(--border-strong)',
+                        color: '#9CA3AF',
+                      }}
+                    >
+                      <Icon name={details.icon} className="text-[36px]" />
+                    </div>
+                  )}
                 </div>
 
                 {/* Card Body */}

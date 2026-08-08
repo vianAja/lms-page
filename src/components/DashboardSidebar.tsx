@@ -40,19 +40,9 @@ export default function DashboardSidebar() {
             <li key={item.href}>
               <Link
                 href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-lg transition-all group ${
-                  isActive
-                    ? 'bg-[#F2F5F8] text-[#2D9CDB]'
-                    : 'text-[#828282] hover:bg-[#F2F5F8] hover:text-[#2D9CDB]'
-                }`}
+                className={`sidebar-nav-item ${isActive ? 'active' : ''}`}
               >
-                <span
-                  className={`transition-colors ${
-                    isActive ? 'text-[#2D9CDB]' : 'text-[#828282] group-hover:text-[#2D9CDB]'
-                  }`}
-                >
-                  {item.icon}
-                </span>
+                <span>{item.icon}</span>
                 {item.label}
               </Link>
             </li>

@@ -143,8 +143,22 @@ body {
 
 /* ─── Material Icons ──────────────────────────────────── */
 .material-symbols-outlined {
-  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+  font-family: 'Material Symbols Outlined', sans-serif !important;
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  display: inline-block;
   line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'liga';
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
 }
 .material-symbols-filled {
   font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
@@ -174,6 +188,12 @@ body {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 8px;
+}
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
 }
 .card-header {
   padding: 16px 20px;
@@ -372,26 +392,39 @@ body {
 .app-prose code::after { content: none; }
 
 .app-prose pre {
-  background: #F3F4F6 !important;
+  background: #1E293B; /* Use dark theme by default, matching the component */
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 16px;
 }
 
 .app-prose pre code {
-  color: #111827 !important;
+  color: #F1F5F9;
   background: transparent !important;
   font-family: var(--font-code);
   font-size: 0.875rem;
+  border: none;
 }
 
 .app-prose blockquote {
-  border-left: 3px solid var(--green-500);
-  background: var(--green-50);
+  border-left: 3px solid var(--green-500) !important;
+  background: rgba(46, 139, 87, 0.07) !important;
   border-radius: 0 6px 6px 0;
-  padding: 0.75rem 1rem;
-  font-style: normal;
-  color: #374151;
+  padding: 0.75rem 1rem !important;
+  font-style: normal !important;
+  color: #374151 !important;
+  margin: 1rem 0 !important;
+}
+
+/* Strip the default typography plugin blockquote background + quotes */
+.app-prose blockquote p {
+  margin: 0 !important;
+  color: #374151 !important;
+  background: transparent !important;
+}
+.app-prose blockquote p::before,
+.app-prose blockquote p::after {
+  content: none !important;
 }
 
 .app-prose table { width: 100%; border-collapse: collapse; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; font-size: 0.9em; }
