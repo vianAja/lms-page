@@ -56,12 +56,12 @@ function DualAreaChart() {
     <svg viewBox={`0 0 ${w} ${h}`} className="w-full" style={{ height: 220 }}>
       <defs>
         <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#2E8B57" stopOpacity="0.35" />
-          <stop offset="100%" stopColor="#2E8B57" stopOpacity="0.02" />
+          <stop offset="0%" stopColor="#45f2b2" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="#45f2b2" stopOpacity="0.02" />
         </linearGradient>
         <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#4ADE80" stopOpacity="0.25" />
-          <stop offset="100%" stopColor="#4ADE80" stopOpacity="0.02" />
+          <stop offset="0%" stopColor="#4cd7f6" stopOpacity="0.25" />
+          <stop offset="100%" stopColor="#4cd7f6" stopOpacity="0.02" />
         </linearGradient>
       </defs>
 
@@ -69,21 +69,21 @@ function DualAreaChart() {
         const y = ys(v);
         return (
           <g key={v}>
-            <line x1={pad.left} x2={w - pad.right} y1={y} y2={y} stroke="#E5E7EB" strokeWidth="0.5" />
-            <text x={pad.left - 6} y={y + 4} textAnchor="end" fontSize="10" fill="#9CA3AF">{v}</text>
+            <line x1={pad.left} x2={w - pad.right} y1={y} y2={y} stroke="rgba(255,255,255,0.08)" strokeWidth="0.5" />
+            <text x={pad.left - 6} y={y + 4} textAnchor="end" fontSize="10" fill="#bacac0" fontFamily="JetBrains Mono">{v}</text>
           </g>
         );
       })}
 
       {CHART_LABELS.map((lbl, i) => (
-        <text key={i} x={xs(i)} y={h - pad.bottom + 16} textAnchor="middle" fontSize="10" fill="#9CA3AF">{lbl}</text>
+        <text key={i} x={xs(i)} y={h - pad.bottom + 16} textAnchor="middle" fontSize="10" fill="#bacac0" fontFamily="JetBrains Mono">{lbl}</text>
       ))}
 
       <path d={makeArea(READING_DATA)} fill="url(#g1)" />
-      <path d={makePath(READING_DATA)} fill="none" stroke="#2E8B57" strokeWidth="2" strokeLinejoin="round" />
+      <path d={makePath(READING_DATA)} fill="none" stroke="#45f2b2" strokeWidth="2" strokeLinejoin="round" />
 
       <path d={makeArea(LAB_DATA)} fill="url(#g2)" />
-      <path d={makePath(LAB_DATA)} fill="none" stroke="#4ADE80" strokeWidth="1.5" strokeLinejoin="round" />
+      <path d={makePath(LAB_DATA)} fill="none" stroke="#4cd7f6" strokeWidth="1.5" strokeLinejoin="round" />
     </svg>
   );
 }

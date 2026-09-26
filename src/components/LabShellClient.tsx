@@ -7,7 +7,7 @@ import ResizableSplit from '@/components/ResizableSplit';
 import WebTerminal from '@/components/WebTerminal';
 import MarkdownViewer from '@/components/MarkdownViewer';
 import { useLabStore } from '@/lib/labStore';
-import { Icon } from '@/components/vn-ui';
+import { Icon, StatusBadge } from '@/components/vn-ui';
 
 type LabShellClientProps = {
   username: string;
@@ -20,8 +20,8 @@ const SESSION_LIMIT_SECONDS = 15 * 60; // 15 minutes
 
 export default function LabShellClient({ username, children }: LabShellClientProps) {
   const pathname = usePathname();
-  const labData = useLabStore((state) => state.labData);
-  const setLabData = useLabStore((state) => state.setLabData);
+  const labData = useLabStore((state: any) => state.labData);
+  const setLabData = useLabStore((state: any) => state.setLabData);
 
   const labId = labData?.labId || '';
   const labTitle = labData?.labTitle || '';
@@ -35,7 +35,7 @@ export default function LabShellClient({ username, children }: LabShellClientPro
   const [isFetchingContent, setIsFetchingContent] = useState(false);
 
   const currentStep = labData?.currentStep || 1;
-  const totalSteps = labData?.totalSteps || 1;
+  const totalSteps = labData?.totalSteps || 3;
 
   const [connectSignal, setConnectSignal] = useState(0);
   const [disconnectSignal, setDisconnectSignal] = useState(0);
@@ -49,8 +49,7 @@ export default function LabShellClient({ username, children }: LabShellClientPro
   const sessionTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [sessionRemaining, setSessionRemaining] = useState(SESSION_LIMIT_SECONDS);
 
-  // When labData is first set, rewrite the URL to /{topicKey}-labs (no reload)
-  // This keeps the URL stable across lab navigation
+  // When labData is first set, rewrite URL
   useEffect(() => {
     if (!topicKey) return;
     const staticSlug = `/${topicKey}-labs`;
@@ -59,12 +58,10 @@ export default function LabShellClient({ username, children }: LabShellClientPro
     }
   }, [topicKey]);
 
-  // Reset client markdown when the server-side page changes (first load per route)
   useEffect(() => {
     setClientMarkdown(null);
   }, [pathname]);
 
-  // Cleanup timers on unmount
   useEffect(() => {
     return () => {
       if (connectionTimerRef.current) clearInterval(connectionTimerRef.current);
@@ -130,17 +127,12 @@ export default function LabShellClient({ username, children }: LabShellClientPro
     setConnectSignal((v) => v + 1);
   };
 
-  /**
-   * Fetch new lab content from API without changing URL.
-   * Terminal remains connected — only the left markdown panel updates.
-   */
   const fetchLabContent = useCallback(async (labKey: string) => {
     setIsFetchingContent(true);
     try {
       const res = await fetch(`/api/lab-content/${labKey}`);
       if (!res.ok) throw new Error('Failed to fetch lab content');
       const data = await res.json();
-      // Update store (labId, title, next/prev hrefs, allowlist)
       setLabData({
         labId: data.labId,
         labTitle: data.labTitle,
@@ -160,7 +152,6 @@ export default function LabShellClient({ username, children }: LabShellClientPro
 
   const handleNextLab = () => {
     if (!nextLabHref) return;
-    // Extract lab key from href e.g. /lab/docker-lab-2 -> docker-lab-2
     const nextLabKey = nextLabHref.replace('/lab/', '');
     fetchLabContent(nextLabKey);
   };
@@ -177,146 +168,124 @@ export default function LabShellClient({ username, children }: LabShellClientPro
   const sessionWarning = sessionRemaining <= 120 && terminalStatus === 'connected';
   const connectionElapsedText = `${(connectionElapsedMs / 1000).toFixed(connectionElapsedMs < 1000 ? 1 : 0)}s`;
 
-  // Determine what markdown to show: client-fetched takes priority over server-rendered children
   const showClientMarkdown = clientMarkdown !== null;
 
   return (
     <>
-      {/* Start-lab loading overlay - Tied to real connection status */}
+      {/* Start-lab loading overlay with Firecracker styling */}
       {(terminalStatus === 'connecting' || terminalStatus === 'reconnecting') && (
-        <div
-          className="fixed inset-0 z-[998] flex items-center justify-center animate-fade-in"
-          style={{ background: 'rgba(255,255,255,0.88)', backdropFilter: 'blur(4px)' }}
-        >
-          <div
-            className="mx-4 flex w-full max-w-md flex-col items-center gap-6 rounded-2xl border p-12 text-center shadow-xl"
-            style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
-          >
+        <div className="fixed inset-0 z-[998] flex items-center justify-center bg-[#0b0f12]/95 backdrop-blur-md">
+          <div className="mx-4 flex w-full max-w-md flex-col items-center gap-6 rounded-xl border border-white/[0.08] bg-[#101417] p-8 text-center shadow-[0_8px_32px_rgba(0,0,0,0.6)]">
             <div className="relative flex h-20 w-20 items-center justify-center">
-              <div className="absolute inset-0 animate-ping rounded-full border-2 border-green-500 opacity-20" />
-              <div className="absolute inset-2 animate-ping rounded-full border-2 border-green-500 opacity-20" style={{ animationDelay: '0.2s' }} />
-              <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-100 border-t-green-500" />
+              <div className="absolute inset-0 animate-ping rounded-full border-2 border-primary opacity-20" />
+              <div className="absolute inset-2 animate-ping rounded-full border-2 border-primary opacity-20" style={{ animationDelay: '0.2s' }} />
+              <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/10 border-t-primary shadow-[0_0_12px_#00d598]" />
             </div>
-            <div className="w-full space-y-3">
-              <div className="font-code text-[13px] font-semibold uppercase tracking-widest text-gray-900">
-                Setting Up Environment
+            <div className="w-full space-y-3 font-mono">
+              <div className="text-[12px] font-bold uppercase tracking-widest text-primary">
+                PROVISIONING FIRECRACKER MICROVM
               </div>
-              <div className="progress-track">
-                <div
-                  className="progress-fill opacity-80"
-                  style={{ animation: 'pulse 1.5s infinite', width: '100%' }}
-                />
+              <div className="progress-track bg-[#06090b]">
+                <div className="progress-fill" style={{ width: '100%', animation: 'pulse 1.2s infinite' }} />
               </div>
-              <div className="flex min-h-[32px] items-center justify-center px-4 font-code text-[11px] text-gray-500">
-                Connecting to instance · {connectionElapsedText}
+              <div className="flex min-h-[32px] items-center justify-center px-4 text-[11px] text-neutral-400">
+                Attaching TAP netdev interface · {connectionElapsedText}
               </div>
             </div>
           </div>
         </div>
       )}
 
-      <div className="flex h-dvh w-full flex-col overflow-hidden" style={{ background: 'var(--bg)' }}>
-        {/* Top Header Bar */}
-        <header
-          className="flex h-14 shrink-0 items-center justify-between px-4 md:px-6"
-          style={{
-            background: 'var(--bg-card)',
-            borderBottom: '1px solid var(--border)',
-          }}
-        >
-          {/* Left: Back + Info */}
-          <div className="flex items-center gap-4">
+      <div className="flex h-dvh w-full flex-col overflow-hidden bg-[#0b0f12] text-[#e0e3e7] font-mono">
+        {/* Top Navigation Header Bar */}
+        <header className="flex h-14 shrink-0 items-center justify-between px-4 md:px-6 bg-[#101417]/95 backdrop-blur-md border-b border-white/[0.08] z-30">
+          {/* Left: Back Link & Title */}
+          <div className="flex items-center gap-3">
             <Link
-              href="/student"
-              className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-gray-100"
-              style={{ color: '#6B7280' }}
+              href="/"
+              className="flex h-8 w-8 items-center justify-center rounded border border-white/[0.08] bg-surface-container-low text-neutral-400 hover:text-white hover:border-white/20 transition-all"
             >
-              <Icon name="arrow_back" className="text-[20px]" />
+              <Icon name="arrow_back" className="text-[18px]" />
             </Link>
-            <div className="h-6 w-px" style={{ background: 'var(--border)' }} />
-            <div>
-              <div className="font-headline text-[15px] font-bold" style={{ color: '#111827' }}>
-                {labTitle}
+            <div className="h-5 w-px bg-white/[0.08]" />
+            <div className="flex items-center gap-2.5">
+              <div className="w-6 h-6 rounded bg-primary/10 border border-primary/30 flex items-center justify-center text-primary">
+                <Icon name="terminal" className="text-[14px]" />
               </div>
-              <div className="font-code text-[11px] font-medium" style={{ color: '#6B7280' }}>
-                VN-Labs Runtime
-              </div>
-            </div>
-          </div>
-
-          {/* Center: Progress Bar (Absolutely centered, not affected by side widths) */}
-          <div className="hidden absolute inset-0 md:flex items-center justify-center pointer-events-none">
-            <div className="flex w-full max-w-sm items-center gap-4 pointer-events-auto">
-              <span className="font-code text-[11px] font-semibold" style={{ color: '#374151', minWidth: '70px', textAlign: 'right' }}>
-                Step {currentStep} of {totalSteps}
+              <span className="font-headline font-semibold text-[14px] text-white tracking-tight truncate max-w-[240px] md:max-w-md">
+                {labTitle || 'DevLab.io Interactive Sandbox'}
               </span>
-              <div className="progress-track flex-1">
-                <div className="progress-fill" style={{ width: `${(currentStep / totalSteps) * 100}%` }} />
+            </div>
+          </div>
+
+          {/* Center: Step Progress Indicator */}
+          <div className="hidden absolute inset-0 md:flex items-center justify-center pointer-events-none">
+            <div className="flex items-center gap-3 px-3 py-1 rounded bg-surface-container-low border border-white/[0.08] pointer-events-auto">
+              <span className="text-[11px] font-mono text-neutral-400 font-medium">
+                STEP <strong className="text-primary">{currentStep}</strong> OF {totalSteps}
+              </span>
+              <div className="w-24 bg-[#0b0f12] h-1.5 rounded-full overflow-hidden border border-white/[0.05]">
+                <div
+                  className="bg-primary h-full rounded-full shadow-[0_0_8px_#00d598] transition-all duration-300"
+                  style={{ width: `${(currentStep / totalSteps) * 100}%` }}
+                />
               </div>
             </div>
           </div>
 
-          {/* Right: Controls */}
-          <div className="flex shrink-0 items-center gap-3">
+          {/* Right: Controls & Timer */}
+          <div className="flex shrink-0 items-center gap-2.5">
             {terminalStatus === 'connected' && (
-              <div
-                className="flex items-center gap-2 rounded-full px-3 py-1 font-code text-[11px] font-semibold tabular-nums"
-                style={{
-                  background: sessionWarning ? 'var(--status-suspended-bg)' : 'var(--bg)',
-                  border: '1px solid var(--border-strong)',
-                  color: sessionWarning ? '#DC2626' : '#374151',
-                }}
-              >
-                <span className={`h-1.5 w-1.5 rounded-full ${sessionWarning ? 'animate-pulse bg-red-500' : 'bg-green-500'}`} />
-                {sMin}:{sSec}
+              <div className={`flex items-center gap-2 px-2.5 py-1 rounded border text-[11px] font-mono font-medium ${
+                sessionWarning
+                  ? 'border-red-500/40 bg-red-500/10 text-red-400 animate-pulse'
+                  : 'border-primary/30 bg-primary/10 text-primary'
+              }`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${sessionWarning ? 'bg-red-500' : 'bg-primary animate-pulse shadow-[0_0_6px_#00d598]'}`} />
+                <span>{sMin}:{sSec}</span>
               </div>
             )}
 
             <button
               onClick={handleStartStop}
               disabled={terminalStatus === 'connecting' || terminalStatus === 'reconnecting'}
-              className="btn-primary"
-              style={{
-                fontSize: '13px',
-                padding: '6px 14px',
-                background: isRunning ? 'var(--status-suspended-bg)' : 'var(--green-500)',
-                color: isRunning ? '#DC2626' : '#fff',
-                borderColor: isRunning ? '#DC2626' : 'var(--green-500)',
-                opacity: (terminalStatus === 'connecting' || terminalStatus === 'reconnecting') ? 0.7 : 1,
-              }}
+              className={`px-3.5 py-1.5 rounded text-[12px] font-mono font-semibold transition-all flex items-center gap-1.5 ${
+                isRunning
+                  ? 'bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20'
+                  : 'bg-primary text-[#0b0f12] border border-primary hover:bg-[#45f2b2] shadow-[0_0_12px_rgba(0,213,152,0.3)]'
+              }`}
             >
-              {(terminalStatus === 'connecting' || terminalStatus === 'reconnecting')
-                ? 'Starting...'
-                : isRunning ? 'Stop Lab' : 'Start Lab'}
+              <Icon name={isRunning ? 'power_settings_new' : 'play_arrow'} className="text-[15px]" />
+              <span>
+                {(terminalStatus === 'connecting' || terminalStatus === 'reconnecting')
+                  ? 'Booting...'
+                  : isRunning ? 'Stop VM' : 'Start Lab'}
+              </span>
             </button>
 
-            {/* Prev Lab Button */}
+            {/* Prev & Next Lab Buttons */}
             {prevLabHref && (
               <button
                 onClick={handlePrevLab}
                 disabled={isFetchingContent}
-                className="btn-secondary flex items-center gap-1"
-                style={{ fontSize: '13px', padding: '6px 14px' }}
+                className="px-3 py-1.5 rounded text-[12px] font-mono text-neutral-300 bg-surface-container-low border border-white/[0.08] hover:border-white/20 hover:text-white transition-all flex items-center gap-1"
               >
                 <Icon name="arrow_back" className="text-[14px]" />
                 Prev
               </button>
             )}
 
-            {/* Next Lab Button */}
             <button
               onClick={handleNextLab}
               disabled={!nextLabHref || isFetchingContent}
-              className="btn-secondary flex items-center gap-1"
-              style={{
-                fontSize: '13px',
-                padding: '6px 14px',
-                opacity: !nextLabHref ? 0.4 : 1,
-                cursor: !nextLabHref ? 'not-allowed' : 'pointer',
-              }}
+              className={`px-3 py-1.5 rounded text-[12px] font-mono transition-all flex items-center gap-1 ${
+                !nextLabHref
+                  ? 'opacity-40 cursor-not-allowed bg-surface-container-low text-neutral-500 border border-white/[0.04]'
+                  : 'bg-surface-container-low text-neutral-300 border border-white/[0.08] hover:border-primary/40 hover:text-primary'
+              }`}
             >
               {isFetchingContent ? (
-                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-gray-400 border-t-gray-700" />
+                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
               ) : (
                 <>
                   Next
@@ -328,13 +297,20 @@ export default function LabShellClient({ username, children }: LabShellClientPro
         </header>
 
         {/* Main Split Panels */}
-        <div className="flex-1 overflow-hidden p-2 md:p-3" style={{ minHeight: 0 }}>
+        <div className="flex-1 overflow-hidden p-2 md:p-3 bg-[#0b0f12]" style={{ minHeight: 0 }}>
           <ResizableSplit
             initialLeftWidth={45}
             leftPanel={
-              <div className="flex h-full flex-col rounded-xl border bg-white relative" style={{ borderColor: 'var(--border)' }}>
-                <div className="flex-1 overflow-y-auto px-6 py-8 md:px-8">
-                  {/* Markdown Content */}
+              <div className="flex h-full flex-col rounded-lg border border-white/[0.08] bg-[#101417] relative overflow-hidden">
+                {/* Curriculum Header */}
+                <div className="px-5 py-3 border-b border-white/[0.06] bg-surface-container-low flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-[11px] font-mono text-neutral-400 uppercase font-semibold">
+                    <Icon name="menu_book" className="text-[15px] text-primary" /> Lab Curriculum Guide
+                  </div>
+                  <StatusBadge status={isRunning ? 'running' : 'idle'} />
+                </div>
+
+                <div className="flex-1 overflow-y-auto px-6 py-6">
                   <div className={`app-prose max-w-none transition-opacity duration-300 ${isFetchingContent ? 'opacity-30' : 'opacity-100'}`}>
                     {showClientMarkdown ? (
                       <MarkdownViewer content={clientMarkdown} />
@@ -344,10 +320,10 @@ export default function LabShellClient({ username, children }: LabShellClientPro
                   </div>
                   
                   {isFetchingContent && (
-                    <div className="absolute inset-0 z-10 flex items-center justify-center">
-                      <div className="flex items-center gap-2 rounded-full bg-white px-4 py-2 shadow-sm border" style={{ borderColor: 'var(--border)' }}>
-                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-gray-200 border-t-emerald-600" />
-                        <span className="font-code text-xs text-gray-500">Loading lab content...</span>
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#101417]/80 backdrop-blur-sm">
+                      <div className="flex items-center gap-2 rounded bg-surface-container-low px-4 py-2 border border-white/[0.08]">
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
+                        <span className="font-mono text-xs text-neutral-300">Fetching lab step...</span>
                       </div>
                     </div>
                   )}
@@ -372,3 +348,4 @@ export default function LabShellClient({ username, children }: LabShellClientPro
     </>
   );
 }
+
