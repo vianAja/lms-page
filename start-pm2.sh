@@ -1,3 +1,5 @@
 #!/bin/bash
 export PORT=3067
-npm run start
+export NODE_ENV=production
+node server.js
+
