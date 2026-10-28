@@ -7,8 +7,8 @@
    Surface Level 1  : #101417 (recessed workspace)
    Surface Level 2  : #181c20 (interactive surface)
    Surface Level 3  : #202529 (container high)
-   Primary Emerald  : #45f2b2 / #00d598 (Hyper Emerald)
-   Secondary Cyan   : #4cd7f6 / #06b6d4 (Cyber Cyan)
+   Primary Teal     : #5eead4 / #0f766e (calm technical accent)
+   Secondary Blue   : #7dd3fc / #0284c7 (supporting accent)
    Tertiary Indigo  : #d4d3ff / #6366f1 (Electric Indigo)
    ─────────────────────────────────────────────────────── */
 
@@ -28,21 +28,21 @@
   /* Text & Contrast */
   --color-on-surface:         #e0e3e7;
   --color-on-background:      #e0e3e7;
-  --color-on-surface-variant: #bacac0;
+  --color-on-surface-variant: #b6c4c0;
 
   /* Outlines */
   --color-outline:         #85948b;
   --color-outline-variant: #3b4a42;
 
   /* Primary – Hyper Emerald */
-  --color-primary:              #45f2b2;
-  --color-primary-container:    #00d598;
+  --color-primary:              #5eead4;
+  --color-primary-container:    #0f766e;
   --color-on-primary:           #003825;
   --color-on-primary-container: #00563b;
 
   /* Secondary – Cyber Cyan */
-  --color-secondary:              #4cd7f6;
-  --color-secondary-container:    #03b5d3;
+  --color-secondary:              #7dd3fc;
+  --color-secondary-container:    #0284c7;
   --color-on-secondary-container: #00424e;
 
   /* Tertiary – Electric Indigo */
@@ -58,7 +58,7 @@
   /* Fonts */
   --font-display:  "Hanken Grotesk", sans-serif;
   --font-headline: "Hanken Grotesk", sans-serif;
-  --font-body:     "JetBrains Mono", monospace;
+  --font-body:     "Hanken Grotesk", sans-serif;
   --font-code:     "JetBrains Mono", monospace;
   --font-sans:     "Hanken Grotesk", sans-serif;
   --font-mono:     "JetBrains Mono", monospace;
@@ -71,28 +71,28 @@
   --border:         rgba(255, 255, 255, 0.08);
   --border-strong:  #3b4a42;
 
-  --emerald-400:    #45f2b2;
-  --emerald-500:    #00d598;
-  --emerald-600:    #00b37e;
+  --emerald-400:    #5eead4;
+  --emerald-500:    #0f766e;
+  --emerald-600:    #0d9488;
 
   /* Sidebar */
   --sidebar-bg:     #101417;
   --sidebar-hover:  #181c1f;
-  --sidebar-active: rgba(69, 242, 178, 0.12);
-  --sidebar-text:   #bacac0;
+  --sidebar-active: rgba(94, 234, 212, 0.12);
+  --sidebar-text:   #b6c4c0;
   --sidebar-muted:  #85948b;
   --sidebar-border: rgba(255, 255, 255, 0.08);
 
   /* Terminal */
   --terminal-bg:    #06090b;
   --terminal-text:  #e0e3e7;
-  --terminal-green: #45f2b2;
+  --terminal-green: #5eead4;
 
   /* Status */
-  --status-active-bg:    rgba(69, 242, 178, 0.1);
-  --status-active-text:  #45f2b2;
-  --status-new-bg:       rgba(76, 215, 246, 0.1);
-  --status-new-text:     #4cd7f6;
+  --status-active-bg:    rgba(94, 234, 212, 0.1);
+  --status-active-text:  #5eead4;
+  --status-new-bg:       rgba(125, 211, 252, 0.1);
+  --status-new-text:     #7dd3fc;
   --status-suspended-bg: rgba(255, 180, 171, 0.1);
   --status-suspended-text:#ffb4ab;
   --status-idle-bg:      rgba(250, 204, 21, 0.1);
@@ -114,8 +114,8 @@ body {
 * { border-color: var(--border); }
 
 ::selection {
-  background: rgba(69, 242, 178, 0.2);
-  color: #45f2b2;
+  background: rgba(94, 234, 212, 0.2);
+  color: #5eead4;
 }
 
 ::-webkit-scrollbar        { width: 6px; height: 6px; }
@@ -163,7 +163,7 @@ body {
 /* ─── Focus ───────────────────────────────────────────── */
 .focus-ring {
   @apply focus-visible:outline-none focus-visible:ring-2;
-  --tw-ring-color: rgba(69, 242, 178, 0.4);
+  --tw-ring-color: rgba(94, 234, 212, 0.4);
 }
 
 /* ─── Cards & Surface Panels ──────────────────────────── */
@@ -195,9 +195,9 @@ body {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  background: #00d598;
-  color: #0b0f12;
-  border: 1px solid #00d598;
+  background: #0f766e;
+  color: #ffffff;
+  border: 1px solid #0f766e;
   border-radius: 4px;
   padding: 8px 18px;
   font-family: var(--font-body);
@@ -206,12 +206,13 @@ body {
   cursor: pointer;
   transition: all 0.15s ease;
   text-decoration: none;
-  box-shadow: 0 0 12px rgba(0, 213, 152, 0.25);
+  box-shadow: none;
 }
 .btn-primary:hover, .button-primary:hover {
-  background: #45f2b2;
-  border-color: #45f2b2;
-  box-shadow: 0 0 18px rgba(0, 213, 152, 0.4);
+  background: #5eead4;
+  border-color: #5eead4;
+  color: #0b0f12;
+  box-shadow: none;
 }
 
 .btn-secondary, .button-secondary {
@@ -232,8 +233,8 @@ body {
   text-decoration: none;
 }
 .btn-secondary:hover, .button-secondary:hover {
-  border-color: rgba(69, 242, 178, 0.5);
-  color: #45f2b2;
+  border-color: rgba(94, 234, 212, 0.5);
+  color: #5eead4;
   background: #1c2023;
 }
 
@@ -252,21 +253,21 @@ body {
   outline: none;
 }
 .field:focus {
-  border-color: #45f2b2;
-  box-shadow: 0 0 0 1px #45f2b2, 0 0 8px rgba(69, 242, 178, 0.2);
+  border-color: #5eead4;
+  box-shadow: 0 0 0 2px rgba(94, 234, 212, 0.16);
 }
 .field::placeholder { color: #85948b; }
 
 /* ─── Status Badges ───────────────────────────────────── */
-.badge-active    { background: rgba(69, 242, 178, 0.1); color: #45f2b2; border: 1px solid rgba(69, 242, 178, 0.3); border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 500; display: inline-block; }
-.badge-new       { background: rgba(76, 215, 246, 0.1); color: #4cd7f6; border: 1px solid rgba(76, 215, 246, 0.3); border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 500; display: inline-block; }
+.badge-active    { background: rgba(94, 234, 212, 0.1); color: #5eead4; border: 1px solid rgba(94, 234, 212, 0.3); border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 500; display: inline-block; }
+.badge-new       { background: rgba(125, 211, 252, 0.1); color: #7dd3fc; border: 1px solid rgba(125, 211, 252, 0.3); border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 500; display: inline-block; }
 .badge-suspended { background: rgba(255, 180, 171, 0.1); color: #ffb4ab; border: 1px solid rgba(255, 180, 171, 0.3); border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 500; display: inline-block; }
 .badge-idle      { background: rgba(250, 204, 21, 0.1); color: #facc15; border: 1px solid rgba(250, 204, 21, 0.3); border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 500; display: inline-block; }
 .badge-offline   { background: rgba(156, 168, 161, 0.1); color: #9ca8a1; border: 1px solid rgba(156, 168, 161, 0.3); border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 500; display: inline-block; }
 
 /* ─── Progress Bar ────────────────────────────────────── */
 .progress-track { height: 6px; background: #1c2023; border-radius: 2px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.05); }
-.progress-fill  { height: 100%; background: linear-gradient(90deg, #45f2b2, #00d598); border-radius: 2px; transition: width 0.4s ease; box-shadow: 0 0 8px rgba(0, 213, 152, 0.5); }
+.progress-fill  { height: 100%; background: linear-gradient(90deg, #5eead4, #0f766e); border-radius: 2px; transition: width 0.4s ease; box-shadow: none; }
 
 /* ─── Sidebar nav items ───────────────────────────────── */
 .sidebar-nav-item {
@@ -286,7 +287,7 @@ body {
   margin-bottom: 2px;
 }
 .sidebar-nav-item:hover { background: var(--sidebar-hover); color: #e0e3e7; }
-.sidebar-nav-item.active { background: var(--sidebar-active); color: #45f2b2; border-left-color: #45f2b2; }
+.sidebar-nav-item.active { background: var(--sidebar-active); color: #5eead4; border-left-color: #5eead4; }
 
 /* ─── Filter Chip Row ─────────────────────────────────── */
 .filter-row {
@@ -302,17 +303,17 @@ body {
   border-radius: 4px;
   font-size: 12px;
   font-weight: 500;
-  color: #bacac0;
+  color: #b6c4c0;
   cursor: pointer;
   background: transparent;
   border: none;
   transition: all 0.12s ease;
 }
 .filter-chip.active {
-  background: #45f2b2;
+  background: #5eead4;
   color: #0b0f12;
   font-weight: 600;
-  box-shadow: 0 0 10px rgba(0, 213, 152, 0.3);
+  box-shadow: none;
 }
 
 /* ─── Data Table ──────────────────────────────────────── */
@@ -322,7 +323,7 @@ body {
   text-align: left;
   font-size: 11px;
   font-weight: 600;
-  color: #bacac0;
+  color: #b6c4c0;
   border-bottom: 1px solid var(--border);
   font-family: var(--font-body);
   text-transform: uppercase;
@@ -342,15 +343,15 @@ body {
   @apply prose max-w-none;
   --tw-prose-body:         #e0e3e7;
   --tw-prose-headings:     #f9fafb;
-  --tw-prose-links:        #45f2b2;
+  --tw-prose-links:        #5eead4;
   --tw-prose-bold:         #ffffff;
-  --tw-prose-bullets:      #45f2b2;
-  --tw-prose-counters:     #45f2b2;
+  --tw-prose-bullets:      #5eead4;
+  --tw-prose-counters:     #5eead4;
   --tw-prose-hr:           rgba(255, 255, 255, 0.08);
   --tw-prose-quotes:       #e0e3e7;
-  --tw-prose-quote-borders:#45f2b2;
-  --tw-prose-captions:     #bacac0;
-  --tw-prose-code:         #45f2b2;
+  --tw-prose-quote-borders:#5eead4;
+  --tw-prose-captions:     #b6c4c0;
+  --tw-prose-code:         #5eead4;
   --tw-prose-pre-code:     #e0e3e7;
   --tw-prose-pre-bg:       #06090b;
   --tw-prose-th-borders:   rgba(255, 255, 255, 0.08);
@@ -374,10 +375,10 @@ body {
   font-family: var(--font-code);
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.06);
-  color: #45f2b2;
+  color: #5eead4;
   padding: 0.1rem 0.4rem;
   font-size: 0.85em;
-  border: 1px solid rgba(69, 242, 178, 0.2);
+  border: 1px solid rgba(94, 234, 212, 0.2);
 }
 
 .app-prose code::before,
@@ -399,8 +400,8 @@ body {
 }
 
 .app-prose blockquote {
-  border-left: 3px solid #45f2b2 !important;
-  background: rgba(69, 242, 178, 0.06) !important;
+  border-left: 3px solid #5eead4 !important;
+  background: rgba(94, 234, 212, 0.06) !important;
   border-radius: 0 4px 4px 0;
   padding: 0.75rem 1rem !important;
   font-style: normal !important;
@@ -420,7 +421,7 @@ body {
 
 .app-prose table { width: 100%; border-collapse: collapse; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; overflow: hidden; font-size: 0.85em; }
 .app-prose thead { background: #181c1f; }
-.app-prose thead th { color: #bacac0 !important; padding: 10px 14px; text-align: left; font-weight: 600; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+.app-prose thead th { color: #b6c4c0 !important; padding: 10px 14px; text-align: left; font-weight: 600; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
 .app-prose tbody tr { border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
 .app-prose tbody tr:last-child { border-bottom: none; }
 .app-prose tbody tr:nth-child(even) { background: #101417; }
@@ -435,3 +436,9 @@ body {
   }
 }
 
+
+
+a:focus-visible, button:focus-visible, input:focus-visible, [role="switch"]:focus-visible {
+  outline: 2px solid #5eead4;
+  outline-offset: 2px;
+}

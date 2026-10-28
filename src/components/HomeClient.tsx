@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { Icon, StatusBadge } from '@/components/vn-ui';
 
 type Lab = {
@@ -58,16 +57,9 @@ const TOPIC_DETAILS: Record<
 };
 
 export default function HomeClient({ topics, displayName, isGuest }: HomeClientProps) {
-  const router = useRouter();
   const [navigatingTo, setNavigatingTo] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
-
-  const handleCardClick = (href: string, topicName: string) => {
-    if (href === '#') return;
-    setNavigatingTo(topicName);
-    router.push(href);
-  };
 
   const filteredTopics = topics.filter((t) => {
     if (activeFilter === 'docker' && t.topic_key !== 'docker') return false;
@@ -82,12 +74,12 @@ export default function HomeClient({ topics, displayName, isGuest }: HomeClientP
   });
 
   return (
-    <div className="min-h-screen bg-[#0b0f12] text-[#e0e3e7] font-mono text-[13px] selection:bg-primary/20 selection:text-primary">
+    <div className="min-h-screen bg-[#0b0f12] text-[#e0e3e7] font-body text-[15px] selection:bg-primary/20 selection:text-primary">
       {/* Page Transition Overlay */}
       {navigatingTo && (
         <div className="fixed inset-0 z-[999] flex flex-col items-center justify-center bg-[#0b0f12]/95 backdrop-blur-md">
           <div className="flex flex-col items-center gap-4 text-center">
-            <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary/20 border-t-primary shadow-[0_0_15px_#00d598]" />
+            <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
             <div className="space-y-1">
               <p className="font-headline text-[15px] font-semibold text-white">Spinning up Firecracker microVM...</p>
               <p className="font-mono text-[12px] text-primary">Provisioning TAP network interface & SSH tunnel to {navigatingTo}</p>
@@ -101,7 +93,7 @@ export default function HomeClient({ topics, displayName, isGuest }: HomeClientP
         <div className="mx-auto flex h-full max-w-7xl items-center justify-between gap-4 px-6">
           <div className="flex items-center gap-8">
             <Link href="/" className="flex items-center gap-2.5 group">
-              <div className="w-8 h-8 rounded border border-primary/40 bg-primary/10 flex items-center justify-center text-primary group-hover:border-primary transition-colors shadow-[0_0_10px_rgba(0,213,152,0.15)]">
+              <div className="w-8 h-8 rounded-md border border-primary/30 bg-primary/10 flex items-center justify-center text-primary group-hover:border-primary transition-colors">
                 <Icon name="terminal" className="text-[19px]" />
               </div>
               <span className="font-headline font-bold text-[19px] tracking-tight text-white">
@@ -110,7 +102,7 @@ export default function HomeClient({ topics, displayName, isGuest }: HomeClientP
             </Link>
             <nav className="hidden xl:flex items-center gap-1">
               <Link href="/" className="px-3 py-1.5 text-white bg-white/[0.06] border border-white/[0.08] rounded text-[12px] font-medium flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_#00d598]"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
                 Explore Courses
               </Link>
               {!isGuest && (
@@ -145,7 +137,7 @@ export default function HomeClient({ topics, displayName, isGuest }: HomeClientP
           {/* Status & Profile Actions */}
           <div className="flex items-center gap-3">
             <div className="hidden lg:flex items-center gap-2 bg-surface-container-low border border-primary/20 px-3 py-1 rounded text-[11px] font-mono text-neutral-300">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shadow-[0_0_8px_#00d598]"></span>
+              <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
               <span className="text-white font-medium">FIRECRACKER VMM</span>
               <span className="text-neutral-600">•</span>
               <span className="text-primary font-mono font-medium">READY</span>
@@ -177,9 +169,7 @@ export default function HomeClient({ topics, displayName, isGuest }: HomeClientP
       <main className="w-full bg-[#0b0f12]">
         {/* Hero Banner Section with Radial Background */}
         <section className="relative w-full overflow-hidden bg-[#101417] pt-12 pb-10 px-6 border-b border-white/[0.06]">
-          <div className="absolute inset-0 bg-[radial-gradient(#00d598_1px,transparent_1px)] [background-size:24px_24px] opacity-[0.04] pointer-events-none"></div>
-          <div className="absolute -top-32 right-12 w-96 h-96 rounded-full bg-primary/10 blur-[120px] pointer-events-none"></div>
-          <div className="absolute top-20 left-1/3 w-64 h-64 rounded-full bg-secondary/10 blur-[100px] pointer-events-none"></div>
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.025)_1px,transparent_1px)] [background-size:32px_32px] pointer-events-none"></div>
 
           <div className="max-w-7xl mx-auto flex flex-col gap-6 relative z-10">
             {/* Status Pill Bar */}
@@ -204,16 +194,16 @@ export default function HomeClient({ topics, displayName, isGuest }: HomeClientP
                   <Icon name="terminal" className="text-[16px] text-primary" />
                   Next-Gen Virtual Lab LMS
                 </div>
-                <h1 className="font-headline text-[32px] lg:text-[44px] text-[#f9fafb] tracking-tight leading-[1.15] font-semibold">
-                  Master Systems Engineering &amp; DevOps with <span className="text-primary underline decoration-primary/40 decoration-2 underline-offset-8">Real microVM</span> Sandboxes.
+                <h1 className="font-headline text-[32px] lg:text-[48px] text-[#f9fafb] tracking-tight leading-[1.12] font-semibold">
+                  Build real systems skills in <span className="text-primary">hands-on labs.</span>
                 </h1>
-                <p className="font-mono text-[13px] text-neutral-400 max-w-2xl leading-relaxed">
-                  Execute real kernel modules, orchestrate Docker containers, and debug system call logs in isolated sub-second Firecracker microVMs directly inside your browser canvas.
+                <p className="font-body text-[16px] text-neutral-300 max-w-2xl leading-relaxed">
+                  Practice Linux, containers, and DevOps in isolated virtual machines, with guided exercises and a terminal right in your browser.
                 </p>
               </div>
 
               {/* Telemetry Card */}
-              <div className="lg:col-span-4 bg-surface-container-low/90 backdrop-blur border border-white/[0.08] p-4 rounded-lg flex flex-col gap-3">
+              <div className="lg:col-span-4 bg-surface-container-low border border-white/[0.08] p-5 rounded-lg flex flex-col gap-3">
                 <div className="flex items-center justify-between text-neutral-400 text-[11px] font-mono">
                   <span className="flex items-center gap-1.5 text-neutral-300">
                     <Icon name="memory" className="text-[16px] text-primary" /> Active MicroVM Host
@@ -221,7 +211,7 @@ export default function HomeClient({ topics, displayName, isGuest }: HomeClientP
                   <span className="text-primary font-mono font-semibold">99.98% Uptime</span>
                 </div>
                 <div className="w-full bg-[#0b0f12] h-1.5 rounded-full overflow-hidden border border-white/[0.05]">
-                  <div className="bg-gradient-to-r from-primary to-primary-container h-full rounded-full w-4/5 shadow-[0_0_10px_#00d598]"></div>
+                  <div className="bg-primary h-full rounded-full w-4/5"></div>
                 </div>
                 <div className="flex justify-between items-center text-neutral-400 text-[11px] font-mono pt-0.5">
                   <span>Cold-start boot: <strong className="text-white">340ms</strong></span>
@@ -253,7 +243,7 @@ export default function HomeClient({ topics, displayName, isGuest }: HomeClientP
                     onClick={() => setActiveFilter(filter.key)}
                     className={`px-3 py-1.5 rounded text-[11px] font-mono font-semibold transition-all ${
                       activeFilter === filter.key
-                        ? 'bg-primary text-[#0b0f12] shadow-[0_0_12px_rgba(0,213,152,0.3)]'
+                        ? 'bg-primary text-[#0b0f12]'
                         : 'bg-surface-container-low text-neutral-300 border border-white/[0.08] hover:border-white/20 hover:text-white'
                     }`}
                   >
@@ -278,7 +268,7 @@ export default function HomeClient({ topics, displayName, isGuest }: HomeClientP
                 <h2 className="font-headline text-[22px] lg:text-[26px] text-[#f9fafb] tracking-tight font-semibold">
                   Systems Engineer &amp; Cloud Native Architecture Track
                 </h2>
-                <p className="font-mono text-[13px] text-neutral-400 leading-relaxed">
+                <p className="font-body text-[15px] text-neutral-300 leading-relaxed">
                   Structured step-by-step roadmap from low-level Linux namespace isolation to multi-container microservice deployments.
                 </p>
                 <div className="flex flex-wrap items-center gap-4 pt-1 font-mono text-[11px] text-neutral-300">
@@ -293,7 +283,7 @@ export default function HomeClient({ topics, displayName, isGuest }: HomeClientP
               <div className="flex flex-col sm:flex-row lg:flex-col items-center gap-2 z-10 w-full lg:w-auto shrink-0">
                 <a
                   href="#topics"
-                  className="w-full sm:w-auto px-5 py-2.5 bg-primary hover:bg-[#00d598] text-[#0b0f12] font-headline text-[14px] font-semibold rounded transition-all flex items-center justify-center gap-2 shadow-[0_0_16px_rgba(0,213,152,0.35)]"
+                  className="w-full sm:w-auto px-5 py-2.5 bg-primary hover:bg-[#5eead4] text-[#0b0f12] font-headline text-[14px] font-semibold rounded transition-all flex items-center justify-center gap-2 shadow-none"
                 >
                   <span>Explore All Labs</span>
                   <Icon name="arrow_forward" className="text-[16px]" />
@@ -320,21 +310,21 @@ export default function HomeClient({ topics, displayName, isGuest }: HomeClientP
                 <div className="text-neutral-800 font-headline text-[48px] absolute -right-1 -bottom-2 select-none pointer-events-none font-bold">01</div>
                 <div className="w-7 h-7 rounded border border-primary/40 bg-primary/10 text-primary flex items-center justify-center font-mono text-[12px] font-bold">01</div>
                 <h4 className="font-headline text-[15px] font-semibold text-white pt-1">Select Module &amp; Topic</h4>
-                <p className="font-mono text-[12px] text-neutral-400 leading-relaxed">Browse curated hands-on labs designed around Linux kernel mechanics and Docker containerization.</p>
+                <p className="font-body text-[14px] text-neutral-300 leading-relaxed">Browse curated hands-on labs designed around Linux kernel mechanics and Docker containerization.</p>
               </div>
 
               <div className="bg-surface-container-lowest border border-white/[0.08] p-4 rounded-lg flex flex-col gap-1.5 relative overflow-hidden group hover:border-white/20 transition-colors">
                 <div className="text-neutral-800 font-headline text-[48px] absolute -right-1 -bottom-2 select-none pointer-events-none font-bold">02</div>
                 <div className="w-7 h-7 rounded border border-primary/40 bg-primary/10 text-primary flex items-center justify-center font-mono text-[12px] font-bold">02</div>
                 <h4 className="font-headline text-[15px] font-semibold text-white pt-1">Launch MicroVM Session</h4>
-                <p className="font-mono text-[12px] text-neutral-400 leading-relaxed">A dedicated Firecracker microVM initializes in milliseconds with full SSH root access and custom TAP interface.</p>
+                <p className="font-body text-[14px] text-neutral-300 leading-relaxed">A dedicated Firecracker microVM initializes in milliseconds with full SSH root access and custom TAP interface.</p>
               </div>
 
               <div className="bg-surface-container-lowest border border-white/[0.08] p-4 rounded-lg flex flex-col gap-1.5 relative overflow-hidden group hover:border-white/20 transition-colors">
                 <div className="text-neutral-800 font-headline text-[48px] absolute -right-1 -bottom-2 select-none pointer-events-none font-bold">03</div>
                 <div className="w-7 h-7 rounded border border-primary/40 bg-primary/10 text-primary flex items-center justify-center font-mono text-[12px] font-bold">03</div>
                 <h4 className="font-headline text-[15px] font-semibold text-white pt-1">Execute &amp; Verify Commands</h4>
-                <p className="font-mono text-[12px] text-neutral-400 leading-relaxed">Run commands in the integrated WebTerminal with real-time feedback and dynamic allowlist verification.</p>
+                <p className="font-body text-[14px] text-neutral-300 leading-relaxed">Run commands in the integrated WebTerminal with real-time feedback and dynamic allowlist verification.</p>
               </div>
             </div>
           </div>
@@ -368,10 +358,18 @@ export default function HomeClient({ topics, displayName, isGuest }: HomeClientP
                 const href = firstAccessibleLab ? `/lab/${firstAccessibleLab.lab_key}` : '#';
 
                 return (
-                  <div
+                  <Link
                     key={topic.topic_key}
-                    onClick={() => handleCardClick(href, details.displayName)}
-                    className="group cursor-pointer rounded-xl bg-surface-container-low border border-white/[0.08] hover:border-primary/50 hover:shadow-[0_0_20px_rgba(0,213,152,0.12)] transition-all flex flex-col justify-between overflow-hidden"
+                    href={href}
+                    aria-disabled={!firstAccessibleLab}
+                    onClick={(event) => {
+                      if (!firstAccessibleLab) {
+                        event.preventDefault();
+                        return;
+                      }
+                      setNavigatingTo(details.displayName);
+                    }}
+                    className="group cursor-pointer rounded-lg bg-surface-container-low border border-white/[0.08] hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b0f12] transition-colors flex flex-col justify-between overflow-hidden"
                   >
                     {/* Header Image & Badge Area */}
                     <div className="relative p-6 border-b border-white/[0.06] bg-[#13171b] flex items-center justify-between">
@@ -403,7 +401,7 @@ export default function HomeClient({ topics, displayName, isGuest }: HomeClientP
 
                     {/* Description & Labs List */}
                     <div className="p-6 flex-1 flex flex-col justify-between gap-6">
-                      <p className="font-mono text-[13px] text-neutral-400 leading-relaxed">
+                      <p className="font-body text-[15px] text-neutral-300 leading-relaxed">
                         {details.description}
                       </p>
 
@@ -437,7 +435,7 @@ export default function HomeClient({ topics, displayName, isGuest }: HomeClientP
                         </div>
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 );
               })}
 
